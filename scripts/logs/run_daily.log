@@ -1,0 +1,7 @@
+[Fri 08/08/2025 19:27:29.19] START 
+[Fri 08/08/2025 19:27:29.20] dbt run 
+Usage: dbt run [OPTIONS]
+Try 'dbt run -h' for help.
+
+Error: Invalid value for '--project-dir': Path 'C:\\Users\\Allen\\Desktop\\Python\\Vita Markets\\scripts\\vitamarkets_dbt' does not exist.
+[Fri 08/08/2025 19:27:31.25] FAILED code 2 

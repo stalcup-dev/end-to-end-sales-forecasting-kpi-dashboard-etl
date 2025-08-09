@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Local data/outputs/secrets
+.env
+data/
+output/
+
+# OS
+.DS_Store

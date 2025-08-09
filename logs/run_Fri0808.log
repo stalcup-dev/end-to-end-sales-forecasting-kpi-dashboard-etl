@@ -1,0 +1,40 @@
+[Fri 08/08/2025 21:03:43.93] START 
+[Fri 08/08/2025 21:03:43.94] CMD: .venv\Scripts\python.exe --version 
+Python 3.13.3
+[Fri 08/08/2025 21:03:44.11] OK: .venv\Scripts\python.exe --version 
+[Fri 08/08/2025 21:03:44.12] CMD: .venv\Scripts\python.exe etl\refresh_actuals.py 
+[Fri 08/08/2025 21:03:44.31] OK: .venv\Scripts\python.exe etl\refresh_actuals.py 
+[Fri 08/08/2025 21:03:44.31] CMD: .venv\Scripts\python.exe prophet_improved.py 
+C:\Users\Allen\Desktop\Python\Vita Markets\prophet_improved.py:46: FutureWarning: DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+  df = df.groupby('sku', group_keys=False).apply(clip_outliers)
+21:03:47 - cmdstanpy - INFO - Chain [1] start processing
+21:03:47 - cmdstanpy - INFO - Chain [1] done processing
+21:03:47 - cmdstanpy - INFO - Chain [1] start processing
+21:03:47 - cmdstanpy - INFO - Chain [1] done processing
+21:03:48 - cmdstanpy - INFO - Chain [1] start processing
+21:03:48 - cmdstanpy - INFO - Chain [1] done processing
+21:03:48 - cmdstanpy - INFO - Chain [1] start processing
+21:03:48 - cmdstanpy - INFO - Chain [1] done processing
+21:03:49 - cmdstanpy - INFO - Chain [1] start processing
+21:03:49 - cmdstanpy - INFO - Chain [1] done processing
+21:03:49 - cmdstanpy - INFO - Chain [1] start processing
+21:03:49 - cmdstanpy - INFO - Chain [1] done processing
+21:03:50 - cmdstanpy - INFO - Chain [1] start processing
+21:03:50 - cmdstanpy - INFO - Chain [1] done processing
+21:03:50 - cmdstanpy - INFO - Chain [1] start processing
+21:03:50 - cmdstanpy - INFO - Chain [1] done processing
+[SUCCESS] Forecasts, actuals, and error metrics exported for Power BI overlay and validation.
+[SUCCESS] DataFrame written to Postgres as table 'simple_prophet_forecast'.
+[SUCCESS] Error metrics written to Postgres as table 'forecast_error_metrics'.
+[Fri 08/08/2025 21:03:52.04] OK: .venv\Scripts\python.exe prophet_improved.py 
+[Fri 08/08/2025 21:03:52.05] CMD: .venv\Scripts\python.exe checkcsv.py 
+CSV row count: 10485
+                  total_units_sold  total_order_value
+sku                                                  
+Flagship Growth              93007        11461410.82
+New Launch                   26249         2279835.62
+Classic Seasonal             41197         1277015.57
+Discontinued                 26411         1192992.80
+Supply Disrupted             31441         1170899.50
+[Fri 08/08/2025 21:03:52.85] OK: .venv\Scripts\python.exe checkcsv.py 
+[Fri 08/08/2025 21:03:52.86] SUCCESS 

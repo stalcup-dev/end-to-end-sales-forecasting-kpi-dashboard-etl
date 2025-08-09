@@ -1,0 +1,6 @@
+pandas==2.2.2
+SQLAlchemy==2.0.32
+psycopg2-binary==2.9.9
+prophet==1.1.5
+python-dotenv==1.0.1
+scikit-learn==1.5.1

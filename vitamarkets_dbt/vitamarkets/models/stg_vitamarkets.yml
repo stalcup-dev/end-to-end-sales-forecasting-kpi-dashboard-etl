@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: stg_vitamarkets
+    description: "Cleaned VitaMarkets order data for analysis and modeling"
+    columns:
+      - name: date
+        tests: [not_null]
+      - name: sku
+        tests: [not_null]
+      - name: units_sold
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "{{ column_name }} >= 0"
+      - name: order_value
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "{{ column_name }} >= 0"

@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: mart_sales_summary
+    description: "Mart for daily sales by SKU, channel, customer segment, and event for VitaMarkets analytics and forecasting."
+    columns:
+      - name: date
+        tests: [not_null]
+      - name: sku
+        tests: [not_null]
+      - name: total_units_sold
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "{{ column_name }} >= 0"
+      - name: total_order_value
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "{{ column_name }} >= 0"
