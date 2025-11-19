@@ -1,204 +1,182 @@
-Vita Markets – Automated Sales Forecasting & Power BI Dashboard
-<img src="docs/images/KPIDashboard.png" width="850">
+# Vita Markets – Automated Sales Forecasting & Power BI Dashboard
 
-A full-stack analytics system that simulates the workflow of a real Direct-to-Consumer (DTC) e-commerce analyst. This project showcases end-to-end capability across data engineering, forecasting, automation, and BI reporting—delivering an entirely hands-free, production-ready forecasting and KPI monitoring pipeline.
+This project showcases a complete, production-style analytics solution: from raw data ingestion and cleaning, to statistical forecasting, KPI visualization, and automated delivery.
 
-It demonstrates expertise in Python, SQL, Prophet forecasting, Power BI, PostgreSQL, and real-world business analysis.
-
-📌 Project Overview
-
-Vita Markets is a complete analytics environment designed to solve real commercial challenges:
-
-Cleaning and modeling raw time-series sales data
-
-Automated SKU-level forecasting
-
-Statistical validation of model performance
-
-Executive dashboards for performance monitoring
-
-Reliable daily automation with logging and QC checks
-
-Database-ready outputs for downstream analytics
-
-The system updates automatically, generating 90-day forecasts, storing results in PostgreSQL, and refreshing dashboards for decision-makers.
-
-🎯 Analyst Skills Demonstrated
-Business Analytics & Requirements Gathering
-
-Next-quarter forecast by SKU
-
-SKU lifecycle trends → growth, decline, replacement
-
-Forecast accuracy tracking (MAPE, RMSE)
-
-Operational readiness: forecast vs. actual deltas
-
-Data Engineering & ETL
-
-Automated ingestion and cleaning of daily sales data
-
-Structured ETL pipeline with reusable modules
-
-Consistent handling of missing values and anomalies
-
-Statistical Forecasting
-
-Prophet models tuned via cmdstanpy
-
-Confidence intervals and trend component analysis
-
-Error scoring logged for continuous validation
-
-Data Storytelling & Visualization
-
-Executive KPI dashboard (Power BI)
-
-Forecast vs. Actual operational view
-
-Seasonal patterns, YOY trends, SKU performance
-
-Automation & Productionization
-
-Fully unattended daily pipeline via run_daily.cmd
-
-Environment activation, ETL, forecasting, QC, and logging
-
-Error-resistant structure suitable for production migration
-
-Database Integration
-
-Writes forecasts + error metrics to Postgres tables
-
-Enables downstream BI, reporting, or dbt transformation
-
-🚀 Key Features
-Automated ETL + Forecasting Pipeline
-
-Cleans raw daily sales data
-
-Generates rolling 90-day forecast per SKU
-
-Logs QC checks and error metrics
-
-Writes all outputs to PostgreSQL
-
-Executive-Ready Dashboards
-
-Full KPI suite
-
-YOY change, seasonal spikes, demand cycles
-
-Product lifecycle and revenue concentration
-
-Hands-Free Operation
-
-run_daily.cmd handles:
-
-Environment activation
-
-ETL workflow
-
-Forecast generation
-
-QC checks + accuracy metrics
-
-Timestamped logging
-
-Production-Grade Project Layout
-
-Clear separation of raw data, scripts, outputs
-
-Modular code for reusability
-
-Ready for cloud scheduling (Airflow/Cloud Run)
-
-🛠️ Tech Stack
-
-Languages & Libraries
-Python (Pandas, Prophet, cmdstanpy, SQLAlchemy, psycopg2, scikit-learn)
-
-Database
-PostgreSQL (forecast + error metrics tables)
-
-Visualization
-Power BI (MainDash.pbix)
-
-Automation
-Windows Batch (run_daily.cmd) + Task Scheduler
-
-Version Control
-GitHub with .gitignore (venv, logs, environment files)
+It demonstrates skills in Python, SQL, Power BI, data modeling, and automation, with a focus on turning complex time-series sales data into actionable business insights. The workflow is automated via scheduled scripts, writes results to a relational database, and produces executive-ready dashboards—mirroring the end-to-end work of a Data Analyst in a live business environment.
 
 ---
 
-📂 Project Structure
+## Project Overview
 
+Vita Markets is a full-stack analytics project designed to mirror the challenges a real-world Direct-to-Consumer (DTC) e-commerce analyst would solve.
+
+This project demonstrates the ability to:
+
+- Acquire, clean, and model sales data
+- Automate SKU-level forecasting
+- Validate outputs with statistical error metrics
+- Visualize results for executives and operational teams
+- Deploy a repeatable, production-grade analytics pipeline
+
+The result is a hands-free forecasting and KPI monitoring system that can update daily and support immediate business decision-making.
+
+---
+
+## Analyst Skills Demonstrated
+
+### Business Requirement Translation
+
+The pipeline is designed to answer realistic commercial questions:
+
+- What are next quarter’s sales by SKU?
+- Which new products are offsetting discontinued SKUs?
+- How accurate are our forecasts over time?
+- How do actuals track against forecasts at the SKU level?
+
+### Data Engineering
+
+- ETL scripts to ingest, clean, and transform time-series sales data
+- Structured handling of missing values and outliers
+- Storage of forecast outputs and error metrics in a relational database
+
+### Statistical Forecasting
+
+- Forecasting models built using Prophet, tuned via `cmdstanpy`
+- SKU-level 90-day forecasts with uncertainty intervals
+- Evaluation using metrics such as MAPE and RMSE
+
+### Data Validation & Quality Control
+
+- Automated checks for:
+  - Missing or malformed data
+  - Unexpected trends or breaks in the series
+  - Forecast accuracy and drift over time
+
+### Data Storytelling & Visualization
+
+- Power BI dashboards tailored to different stakeholder groups:
+  - Executive KPI view for high-level performance
+  - Forecast vs. Actual overlays for operational planning
+  - Seasonality and product lifecycle visibility
+
+### Automation & Scheduling
+
+- Windows batch script (`run_daily.cmd`) orchestrates:
+  - Environment activation
+  - ETL pipeline
+  - Forecast generation
+  - Quality control checks
+  - Logging with timestamps for monitoring
+
+### Database Integration
+
+- Forecast results and error metrics are written to PostgreSQL
+- Tables are ready for downstream analytics, reporting, or dbt models
+
+---
+
+## Key Features
+
+### Automated ETL + Forecasting Pipeline
+
+- Cleans and transforms daily actual sales data
+- Generates 90-day forecasts per SKU
+- Calculates accuracy metrics (e.g., MAPE, RMSE)
+- Writes forecasts and metrics to PostgreSQL
+
+### Executive-Ready Dashboards
+
+- KPI tracking across all SKUs
+- Year-over-year growth analysis
+- Identification of seasonal spikes and product lifecycle stages
+- Clear views for both executives and operations
+
+### Hands-Free Operation
+
+The `run_daily.cmd` script handles:
+
+1. Activating the Python environment  
+2. Running the ETL process  
+3. Generating forecasts  
+4. Running QC checks  
+5. Writing logs with timestamps to `/logs`
+
+### Production-Oriented Structure
+
+- Reusable folder and script organization
+- Separation of raw data, processing logic, and outputs
+- Ready to be adapted to cloud scheduling (Airflow, Cron, etc.)
+
+---
+
+## Tech Stack
+
+**Languages & Libraries**
+
+- Python (pandas, Prophet, cmdstanpy, SQLAlchemy, psycopg2, scikit-learn)
+
+**Database**
+
+- PostgreSQL (forecast and error metrics tables)
+
+**Visualization**
+
+- Power BI (`MainDash.pbix`)
+
+**Automation**
+
+- Windows Batch (`run_daily.cmd`)
+- Windows Task Scheduler
+
+**Version Control**
+
+- Git & GitHub
+- `.gitignore` configured for virtual environment, logs, and environment files
+
+---
+
+## Project Structure
+
+```text
 VitaMarkets/
-├── .venv/                         # Virtual environment
-├── data/                          # Raw & cleaned datasets
-├── etl/                           # ETL pipeline
-├── improved prophet forecasts/    # Experimental modeling
+├── .venv/                         # Python virtual environment
+├── data/                          # Raw and processed datasets
+├── etl/                           # ETL scripts
+├── improved prophet forecasts/    # Archived experiments
 ├── logs/                          # Execution logs
-├── prophet_forecasts/             # Forecast outputs
-├── scripts/                       # Helper modules
-├── vitamarkets_dbt/               # Optional dbt models
-├── checkcsv.py                    # Data validation
-├── prophet_improved.py            # Forecast pipeline
-├── vitamarkets_ultra_realistic_sampledataset.csv
-├── MainDash.pbix                  # Power BI dashboard
-├── ForecastingDash.png            # Forecast screenshot
-├── KPIDashboard.png               # KPI screenshot
-├── database.png                   # Database schema
+├── prophet_forecasts/             # Final forecasts
+├── scripts/                       # Utility scripts
+├── vitamarkets_dbt/               # (Optional) dbt models
+├── checkcsv.py                    # Data validation script
+├── prophet_improved.py            # Forecast generation
+├── vitamarkets_ultra_realistic_sampledataset.csv  # Synthetic dataset
+├── MainDash.pbix                  # Power BI report
+├── ForecastingDash.png            # Forecast dashboard screenshot
+├── KPIDashboard.png               # KPI dashboard screenshot
+├── database.png                   # Database schema image
 ├── run_daily.cmd                  # Automation script
 ├── .env                           # Environment variables
-└── README.md
+└── README.md                      # Documentation
 
-⚙️ How to Run the Pipeline
+```
+```
+How to Run
 Manual Run
-
 cd "C:\Users\<YourUser>\Desktop\Python\Vita Markets"
 .\run_daily.cmd
 
 Nightly Automation (Windows Task Scheduler)
 
-Create a new Task
+Open Task Scheduler and create a new task.
 
-Trigger → Daily at chosen time
+Trigger: Daily at your preferred time.
 
-Action →
+Action:
 
-Program: cmd.exe  
-Args: /c "C:\Users\<YourUser>\Desktop\Python\Vita Markets\run_daily.cmd"
+Program: cmd.exe
+Arguments: /c "C:\Users\<YourUser>\Desktop\Python\Vita Markets\run_daily.cmd"
 Start in: C:\Users\<YourUser>\Desktop\Python\Vita Markets
 
-4. Review logs in /logs each morning
 
-📊 Dashboards
-KPI Dashboard
-<img src="KPIDashboard.png" width="750">
-Forecasting Dashboard
-<img src="ForecastingDash.png" width="750">
-📈 Example Outputs
-Forecast Results (simple_prophet_forecast)
-SKU	Date	Forecast	Lower Bound	Upper Bound
-Flagship Growth	2025-08-09	325	290	360
-New Launch	2025-08-09	115	98	132
-Error Metrics (forecast_error_metrics)
-SKU	MAPE	RMSE
-Flagship Growth	7.8%	45.2
-New Launch	9.1%	12.4
-💡 Key Takeaways
-
-This project demonstrates mastery of real-world analytics workflow:
-
-Turning business ambiguity into clear technical logic
-
-Building scalable, automated forecasting systems
-
-Applying statistical modeling to real commercial problems
-
-Creating dashboards that support strategic decisions
-
-Deploying a pipeline that runs autonomously and reliably
-
+Logs are written to the logs/ directory for review.
+```
