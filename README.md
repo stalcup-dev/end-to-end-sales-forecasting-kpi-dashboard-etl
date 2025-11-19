@@ -1,7 +1,7 @@
 # Vita Markets – Automated Sales Forecasting & Power BI Dashboard
 
 https://github.com/stalcup-dev/end-to-end-sales-forecasting-kpi-dashboard-etl/blob/main/KPIDashboard.png?raw=true
-[![Dashboard](KPIDashboard.png)]([https://github.com/stalcup-dev/your-repo](https://github.com/stalcup-dev/end-to-end-sales-forecasting-kpi-dashboard-etl/blob/main/KPIDashboard.png?raw=true))
+[![Dashboard](KPIDashboard.png)]([https://github.com/stalcup-dev/your-repo](https://github.com/stalcup-dev/end-to-end-sales-forecasting-kpi-dashboard-etl/blob/main/KPIDashboard.png?raw=true)
 
 
 This project showcases a complete, production-style analytics solution: from raw data ingestion and cleaning, to statistical forecasting, KPI visualization, and automated delivery.
