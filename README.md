@@ -142,6 +142,10 @@ The `run_daily.cmd` script handles:
 
 ---
 
+## What's Next?
+
+Upgrade from windowstask scheduler to cloud solution.
+
 ## Project Structure
 
 ```text
