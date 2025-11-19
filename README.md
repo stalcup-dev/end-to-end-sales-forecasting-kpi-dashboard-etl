@@ -36,6 +36,10 @@ The pipeline is designed to answer realistic commercial questions:
 - How accurate are our forecasts over time?
 - How do actuals track against forecasts at the SKU level?
 
+### Takeaways
+
+Flagship Growth remains our top revenue driver, while New Launch delivered 150% YoY growth—fully offsetting losses from discontinued and supply-disrupted SKUs. Immediate action suggestion: double down on New Launch to capitalize on rapid growth and mitigate ongoing declines in other SKUs.
+
 ### Data Engineering
 
 - ETL scripts to ingest, clean, and transform time-series sales data
