@@ -1,12 +1,53 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
 
 # Local data/outputs/secrets
 .env
 data/
 output/
 
+# Generated outputs (not tracked)
+logs/
+prophet_forecasts/
+prophet_forecasts_old/
+reports/*.md
+!reports/README.md
+
+# Logs
+*.log
+
 # OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Microsoft Office temp files
+~$*.docx
+~$*.xlsx
+~$*.pptx
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# dbt
+vitamarkets_dbt/vitamarkets/target/
+vitamarkets_dbt/vitamarkets/dbt_packages/
+vitamarkets_dbt/vitamarkets/logs/

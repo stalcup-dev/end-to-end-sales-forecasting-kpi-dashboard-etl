@@ -1,8 +1,11 @@
 # etl/refresh_actuals.py
 import os
+
 import pandas as pd
 from sqlalchemy import text
+
 from db import get_engine  # <- central, secure DB connector (loads .env inside)
+
 
 def load_actuals(csv_path: str = "data/actuals_latest.csv") -> int:
     """
@@ -19,8 +22,13 @@ def load_actuals(csv_path: str = "data/actuals_latest.csv") -> int:
     # Expected columns: date, sku, channel, country, customer_segment,
     #                   total_units_sold, total_order_value, main_event, promo_flag
     required = [
-        "date", "sku", "channel", "country", "customer_segment",
-        "total_units_sold", "total_order_value"
+        "date",
+        "sku",
+        "channel",
+        "country",
+        "customer_segment",
+        "total_units_sold",
+        "total_order_value",
     ]
     missing = [c for c in required if c not in df.columns]
     if missing:
@@ -45,12 +53,13 @@ def load_actuals(csv_path: str = "data/actuals_latest.csv") -> int:
             con=conn,
             if_exists="replace",
             index=False,
-            chunksize=10_000,      # friendly for larger files
-            method="multi"
+            chunksize=10_000,  # friendly for larger files
+            method="multi",
         )
 
     print(f"[OK] Loaded {len(df):,} rows into public.mart_sales_summary")
     return len(df)
+
 
 if __name__ == "__main__":
     load_actuals()
