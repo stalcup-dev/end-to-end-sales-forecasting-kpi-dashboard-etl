@@ -3,18 +3,86 @@ version: 2
 models:
   - name: mart_sales_summary
     description: "Mart for daily sales by SKU, channel, customer segment, and event for VitaMarkets analytics and forecasting."
+    
+    # Table-level tests
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - date
+            - sku
+            - channel
+            - country
+            - customer_segment
+    
     columns:
       - name: date
-        tests: [not_null]
+        description: "Transaction date (YYYY-MM-DD)"
+        tests: 
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "{{ column_name }} >= '2021-01-01'"
+              config:
+                severity: warn
+      
       - name: sku
-        tests: [not_null]
+        description: "Stock Keeping Unit identifier"
+        tests: 
+          - not_null
+          - relationships:
+              to: ref('stg_vitamarkets')
+              field: sku
+              config:
+                severity: warn
+      
+      - name: category
+        description: "Product category"
+        tests:
+          - accepted_values:
+              values: ['Tech', 'Health', 'Wellness']
+              config:
+                severity: warn
+      
+      - name: channel
+        description: "Sales channel"
+        tests:
+          - accepted_values:
+              values: ['website', 'amazon', 'mobile']
+              config:
+                severity: warn
+      
+      - name: country
+        description: "Country code"
+        tests:
+          - accepted_values:
+              values: ['US', 'CA']
+              config:
+                severity: warn
+      
+      - name: customer_segment
+        description: "Customer demographic segment"
+        tests:
+          - accepted_values:
+              values: ['Young Pro', 'Family', 'Older Adult']
+              config:
+                severity: warn
+      
       - name: total_units_sold
+        description: "Total units sold (aggregated)"
         tests:
           - not_null
           - dbt_utils.expression_is_true:
               expression: "{{ column_name }} >= 0"
+      
       - name: total_order_value
+        description: "Total revenue in USD (aggregated)"
         tests:
           - not_null
           - dbt_utils.expression_is_true:
               expression: "{{ column_name }} >= 0"
+      
+      - name: transaction_count
+        description: "Number of transactions"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "{{ column_name }} > 0"
