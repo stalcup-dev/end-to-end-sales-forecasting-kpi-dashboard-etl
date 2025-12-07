@@ -3,6 +3,7 @@
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![dbt](https://img.shields.io/badge/dbt-1.7-orange.svg)](https://www.getdbt.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-blue.svg)](https://www.postgresql.org/)
+[![Tests](https://github.com/stalcup-dev/end-to-end-sales-forecasting-kpi-dashboard-etl/actions/workflows/ci.yml/badge.svg)](https://github.com/stalcup-dev/end-to-end-sales-forecasting-kpi-dashboard-etl/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **An end-to-end analytics pipeline** that ingests daily sales data, transforms it using dbt, generates 90-day SKU-level forecasts with Prophet, and delivers executive-ready dashboards in Power BI. Built to mirror the work of a Data Analyst or Analytics Engineer at a DTC e-commerce company.
