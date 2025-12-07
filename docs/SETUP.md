@@ -436,4 +436,4 @@ cd .. && rm -rf end-to-end-sales-forecasting-kpi-dashboard-etl
 
 **Contact:**
 - GitHub Issues: https://github.com/stalcup-dev/end-to-end-sales-forecasting-kpi-dashboard-etl/issues
-- Email: (your email here)
+- Email: allen.stalc@gmail.com

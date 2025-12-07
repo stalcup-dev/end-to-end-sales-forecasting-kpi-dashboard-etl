@@ -289,7 +289,7 @@ This is a portfolio project, but feedback is welcome! If you spot issues or have
 
 ## 📧 Contact
 
-**[Your Name]** - your.email@example.com | [LinkedIn](https://linkedin.com/in/yourprofile) | [GitHub](https://github.com/stalcup-dev)
+**Allen Stalcup** - allen.stalc@gmail.com | [LinkedIn](https://linkedin.com/in/yourprofile) | [GitHub](https://github.com/stalcup-dev)
 
 ⭐ If you found this project helpful or interesting, please star this repo!
 

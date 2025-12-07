@@ -522,7 +522,7 @@ Based on current data in the repository:
 ## Contact & Escalation
 
 **For dashboard issues:**
-- Contact: Data Analyst / Analytics Engineer (your email here)
+- Contact: Data Analyst / Analytics Engineer (allen.stalc@gmail.com)
 
 **For business decisions:**
 - Escalate to: Director of Operations, VP Marketing, CFO (depending on question)

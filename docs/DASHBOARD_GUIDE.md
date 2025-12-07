@@ -321,4 +321,4 @@ Margin $ = [Total Revenue] * 0.32
 
 **Last Updated:** 2025-12-07  
 **Dashboard Version:** 1.0  
-**Contact:** (your email here)
+**Contact:** allen.stalc@gmail.com

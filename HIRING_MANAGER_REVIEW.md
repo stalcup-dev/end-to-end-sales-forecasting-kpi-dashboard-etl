@@ -904,7 +904,7 @@ black --check . && isort --check .
 
 ## 📧 Contact
 
-**Your Name** - [your.email@example.com](mailto:your.email@example.com) | [LinkedIn](https://linkedin.com/in/yourprofile)
+**Allen Stalcup** - [allen.stalc@gmail.com](mailto:allen.stalc@gmail.com) | [LinkedIn](https://linkedin.com/in/yourprofile)
 
 ⭐ If you found this project helpful, please star this repo!
 ```
