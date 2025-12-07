@@ -12,7 +12,6 @@ Usage:
     python scripts/bootstrap.py
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -44,19 +43,19 @@ def check_db_connection(engine):
 def run_init_sql(engine):
     """Run init.sql to create schema and tables (idempotent)."""
     print(f"\n📄 Running init.sql from {SQL_INIT}...")
-    
+
     if not SQL_INIT.exists():
         raise FileNotFoundError(f"Init SQL file not found: {SQL_INIT}")
-    
+
     sql_content = SQL_INIT.read_text()
-    
+
     # Split on semicolons and execute each statement
-    statements = [s.strip() for s in sql_content.split(';') if s.strip()]
-    
+    statements = [s.strip() for s in sql_content.split(";") if s.strip()]
+
     with engine.connect() as conn:
         for stmt in statements:
             # Skip psql-specific commands and comments
-            if stmt.startswith('\\') or stmt.startswith('--') or not stmt:
+            if stmt.startswith("\\") or stmt.startswith("--") or not stmt:
                 continue
             try:
                 conn.execute(text(stmt))
@@ -68,48 +67,48 @@ def run_init_sql(engine):
                 if "does not exist" in str(e).lower() and "DROP TABLE" in stmt:
                     continue
                 print(f"⚠️  Statement failed (may be ok): {str(e)[:100]}")
-        
+
         conn.commit()
-    
+
     print("✅ Schema and tables created")
 
 
 def load_sample_data(engine):
     """Load CSV data into vitamarkets_raw table."""
     print(f"\n📊 Loading sample data from {SAMPLE_DATA.name}...")
-    
+
     if not SAMPLE_DATA.exists():
         raise FileNotFoundError(f"Sample data file not found: {SAMPLE_DATA}")
-    
+
     # Read CSV
     df = pd.read_csv(SAMPLE_DATA)
     print(f"   → Loaded {len(df):,} rows from CSV")
-    
+
     # Write to database (replace existing data for idempotency)
     df.to_sql(
-        'vitamarkets_raw',
+        "vitamarkets_raw",
         engine,
-        schema='public',
-        if_exists='replace',  # Idempotent: always start fresh
+        schema="public",
+        if_exists="replace",  # Idempotent: always start fresh
         index=False,
-        method='multi',
-        chunksize=1000
+        method="multi",
+        chunksize=1000,
     )
-    
+
     print(f"✅ Loaded {len(df):,} rows into vitamarkets_raw")
 
 
 def print_row_counts(engine):
     """Print row counts for all tables."""
     print("\n📈 Table row counts:")
-    
+
     tables = [
-        'vitamarkets_raw',
-        'mart_sales_summary',
-        'simple_prophet_forecast',
-        'forecast_error_metrics'
+        "vitamarkets_raw",
+        "mart_sales_summary",
+        "simple_prophet_forecast",
+        "forecast_error_metrics",
     ]
-    
+
     with engine.connect() as conn:
         for table in tables:
             try:
@@ -124,34 +123,34 @@ def main():
     print("=" * 70)
     print("VITA MARKETS DATABASE BOOTSTRAP")
     print("=" * 70)
-    
+
     # Get database engine
     engine = get_engine()
-    
+
     # Step 1: Check connection
     if not check_db_connection(engine):
         print("\n❌ Bootstrap failed: Cannot connect to database")
         print("   Make sure PostgreSQL is running (docker compose up -d)")
         print("   and .env is configured correctly")
         sys.exit(1)
-    
+
     # Step 2: Run init SQL
     try:
         run_init_sql(engine)
     except Exception as e:
         print(f"\n❌ Failed to run init SQL: {e}")
         sys.exit(1)
-    
+
     # Step 3: Load sample data
     try:
         load_sample_data(engine)
     except Exception as e:
         print(f"\n❌ Failed to load sample data: {e}")
         sys.exit(1)
-    
+
     # Step 4: Print verification
     print_row_counts(engine)
-    
+
     print("\n" + "=" * 70)
     print("✅ BOOTSTRAP COMPLETE!")
     print("=" * 70)
