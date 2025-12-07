@@ -1,0 +1,139 @@
+name: CI - Tests and Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run pytest
+      run: |
+        pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=xml
+      continue-on-error: true
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+      continue-on-error: true
+
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install linting tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install black isort flake8 mypy
+    
+    - name: Check code formatting with black
+      run: |
+        black --check --diff .
+      continue-on-error: true
+    
+    - name: Check import sorting with isort
+      run: |
+        isort --check-only --diff .
+      continue-on-error: true
+    
+    - name: Lint with flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      continue-on-error: true
+
+  dbt-test:
+    name: dbt Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: vitamarkets_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dbt and dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install dbt-postgres
+    
+    - name: Set up test database
+      env:
+        PGPASSWORD: postgres
+      run: |
+        psql -h localhost -U postgres -d vitamarkets_test -f setup/init_db.sql || echo "Init script failed, continuing..."
+      continue-on-error: true
+    
+    - name: Run dbt deps
+      working-directory: vitamarkets_dbt/vitamarkets
+      run: |
+        dbt deps
+      continue-on-error: true
+    
+    - name: Run dbt tests
+      working-directory: vitamarkets_dbt/vitamarkets
+      env:
+        PG_HOST: localhost
+        PG_PORT: 5432
+        PG_USER: postgres
+        PG_PASS: postgres
+        PG_DB: vitamarkets_test
+      run: |
+        dbt test --profiles-dir .
+      continue-on-error: true
