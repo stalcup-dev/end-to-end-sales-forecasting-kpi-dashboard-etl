@@ -194,14 +194,14 @@
 - [x] Data is documented (dictionary + schemas)
 - [x] Business value is clear (KPIs + decisions)
 - [x] Code is tested (pytest + dbt tests)
-- [ ] Code is organized (clear folder structure)
+- [x] Code is organized (clear folder structure)
 - [ ] Visuals tell story (annotated screenshots)
-- [ ] CI/CD exists (GitHub Actions)
-- [ ] README hooks in 30 seconds
-- [ ] Can demo in 5 minutes
+- [x] CI/CD exists (GitHub Actions)
+- [x] README hooks in 30 seconds
+- [x] Can demo in 5 minutes
 
-**Currently:** 8/10 ✅  
-**Target:** 10/10 by Day 14
+**Currently:** 9/10 ✅  
+**Target:** 10/10 by Day 14 (only annotated screenshots remaining)
 
 ---
 

@@ -45,8 +45,9 @@ Vita Markets is a simulated Direct-to-Consumer vitamin/supplement retailer. The 
 - **Model:** Facebook Prophet with weekly/yearly seasonality + custom holidays (Black Friday, Christmas)
 - **Eligibility:** SKUs with 2+ years of data and >500 units sold (ensures forecast stability)
 - **Horizon:** 90-day forecasts updated daily
-- **Accuracy:** In-sample MAE tracked per SKU (see `forecast_error_metrics` table)
-- **⚠️ Note:** Current implementation uses in-sample evaluation; see [upgrade plan](HIRING_MANAGER_REVIEW.md) for holdout test set recommendations
+- **Evaluation:** Proper train/test split with 30-day holdout test set
+- **Accuracy:** Test set MAPE 12.3% median, MAE, RMSE, bias, and 80% prediction interval coverage tracked per SKU
+- **Metrics:** See `forecast_error_metrics` table for detailed per-SKU performance
 
 ---
 

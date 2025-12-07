@@ -262,11 +262,11 @@ This repository has been significantly enhanced to maximize hiring potential for
 ### 1. Resume
 **Projects Section:**
 ```
-Vita Markets - End-to-End Sales Forecasting & Analytics Pipeline
+Allen Stalcup - Vita Markets: End-to-End Sales Forecasting & Analytics Pipeline
 • Built production-grade ETL pipeline with Python, dbt, PostgreSQL serving 
   90-day forecasts for inventory planning
 • Achieved 12.3% median MAPE across 15 SKUs using Facebook Prophet with 
-  proper train/test split
+  proper train/test split (30-day holdout test set)
 • Implemented 16 pytest unit tests and GitHub Actions CI/CD for data quality
 • Tech: Python, SQL, dbt, Prophet, Power BI, PostgreSQL, pytest, GitHub Actions
 ```
