@@ -72,14 +72,14 @@ class TestForecastEval:
 
     def test_coverage_partial(self):
         """Test coverage when some actuals fall outside intervals"""
-        y_true = np.array([100, 150, 250, 280, 350])  # 250 and 350 outside
+        y_true = np.array([100, 150, 250, 280, 350])  # 250, 280, and 350 outside
         yhat_lower = np.array([90, 140, 190, 240, 290])
         yhat_upper = np.array([110, 160, 210, 260, 310])
 
         within_interval = (y_true >= yhat_lower) & (y_true <= yhat_upper)
         coverage = within_interval.mean() * 100
 
-        assert coverage == 60.0  # 3 out of 5
+        assert coverage == 40.0  # 2 out of 5
 
     def test_metrics_return_correct_keys(self):
         """Test that metrics dict has expected keys"""

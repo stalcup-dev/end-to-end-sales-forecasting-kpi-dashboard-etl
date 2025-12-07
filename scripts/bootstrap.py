@@ -20,7 +20,7 @@ from sqlalchemy import text
 
 # Add repo root to path to import db module
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from db import get_engine
+from db import get_engine  # noqa: E402
 
 # Constants
 ROOT = Path(__file__).parent.parent
