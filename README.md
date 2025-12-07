@@ -67,37 +67,63 @@ Vita Markets is a simulated Direct-to-Consumer vitamin/supplement retailer. The 
 
 ---
 
-## 🚀 Quick Start (5 minutes)
+## 🚀 Quick Start (Fresh Machine Setup)
 
-**Prerequisites:** Python 3.9+, PostgreSQL 14+
+**Prerequisites:** Python 3.9+, Docker, Git
 
 ```bash
-# 1. Clone and setup
+# 1. Clone repository
 git clone https://github.com/stalcup-dev/end-to-end-sales-forecasting-kpi-dashboard-etl.git
 cd end-to-end-sales-forecasting-kpi-dashboard-etl
-python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
+# 2. Set up Python environment
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 
-# 2. Configure database
-cp .env.example .env  # Edit with your PostgreSQL credentials
+# 3. Configure database (copy and edit with your credentials)
+cp .env.example .env
+# Edit .env if needed (defaults work with Docker)
 
-# 3. Initialize database and load sample data
-psql -U postgres -h localhost -d postgres -c "CREATE DATABASE vitamarkets;"
-psql -U postgres -h localhost -d vitamarkets -f setup/init_db.sql
+# 4. Start PostgreSQL with Docker
+docker compose up -d
 
-# 4. Run dbt transformations
-cd vitamarkets_dbt/vitamarkets && dbt deps && dbt run && cd ../..
+# 5. Initialize database and load sample data
+python scripts/bootstrap.py
 
-# 5. Generate forecasts
-python prophet_improved.py
+# 6. Run complete pipeline (ETL → forecast → metrics → report)
+python -m vitamarkets.pipeline --run-all
 ```
 
-**Expected output:**
-- ✅ `public.mart_sales_summary` table (daily sales by SKU)
-- ✅ `public.simple_prophet_forecast` table (90-day forecasts)
-- ✅ `prophet_forecasts/*.csv` files for Power BI
+**Expected outputs:**
+- ✅ Database tables: `mart_sales_summary`, `simple_prophet_forecast`, `forecast_error_metrics`
+- ✅ Evaluation report: `reports/forecast_eval.md`
+- ✅ CSV exports: `prophet_forecasts/*.csv`
+- ✅ Dashboard: Open `MainDash.pbix` in Power BI Desktop and refresh
 
-📖 **Full setup guide:** See [docs/SETUP.md](docs/SETUP.md)
+**Total time:** ~5 minutes
+
+📖 **Detailed guide:** See [docs/SETUP.md](docs/SETUP.md)
+
+---
+
+## 📋 Repo Contract (What This Pipeline Produces)
+
+### Database Tables
+- `vitamarkets_raw` - Raw sales transactions (50k+ rows, 19 columns)
+- `mart_sales_summary` - Daily aggregated sales by SKU/channel/segment
+- `simple_prophet_forecast` - 90-day forecasts with uncertainty intervals
+- `forecast_error_metrics` - Per-SKU accuracy metrics (MAE, MAPE, RMSE, bias, coverage)
+
+### Files
+- `reports/forecast_eval.md` - Markdown report with metrics summary and quality assessment
+- `prophet_forecasts/simple_prophet_forecast.csv` - Forecast data for Power BI
+- `prophet_forecasts/forecast_error_metrics.csv` - Metrics for analysis
+- `logs/run_daily.log` - Pipeline execution logs (not tracked in git)
+
+### Power BI Dashboard
+- `MainDash.pbix` - Executive KPIs + Forecast vs. Actuals visualizations
 
 ---
 
