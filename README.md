@@ -133,6 +133,7 @@ python -m vitamarkets.pipeline --run-all
 - Python 3.11 (pandas, SQLAlchemy, Prophet, scikit-learn)
 - PostgreSQL 14 (transactional data store)
 - dbt 1.7 (SQL transformations & data modeling)
+- Docker Compose (containerized database)
 
 **Forecasting:**
 - Prophet 1.1.5 (time series forecasting with seasonality)
@@ -142,8 +143,17 @@ python -m vitamarkets.pipeline --run-all
 - Power BI Desktop (dashboards)
 
 **Quality & Testing:**
+- pytest (unit & integration tests)
 - dbt schema tests (data validation)
+- ruff (fast Python linter)
+- black (code formatter)
+- pre-commit (git hooks)
+- GitHub Actions (CI/CD)
+
+**DevOps:**
+- Docker & Docker Compose
 - Python logging (execution monitoring)
+- Environment management (.env, virtualenv)
 
 ---
 
@@ -152,7 +162,15 @@ python -m vitamarkets.pipeline --run-all
 ```
 .
 ├── setup/
-│   └── init_db.sql              # Database initialization & sample data load
+│   └── init_db.sql              # Legacy: Database init (superseded by sql/init.sql)
+├── sql/
+│   └── init.sql                 # Database schema creation (used by bootstrap.py)
+├── scripts/
+│   ├── bootstrap.py             # NEW: Idempotent DB setup & data loader
+│   └── run_daily.py             # Legacy orchestration (use vitamarkets/pipeline.py)
+├── vitamarkets/                 # NEW: Python package for unified pipeline
+│   ├── __init__.py
+│   └── pipeline.py              # Single-command CLI: --run-all, --forecast, --report
 ├── etl/
 │   ├── refresh_actuals.py       # Load CSV to Postgres
 │   └── requirements.txt
@@ -162,23 +180,37 @@ python -m vitamarkets.pipeline --run-all
 │       │   ├── stg_vitamarkets.sql    # Staging layer (clean raw data)
 │       │   └── mart_sales_summary.sql # Mart layer (aggregated KPIs)
 │       └── dbt_project.yml
+├── tests/                       # NEW: pytest test suite
+│   ├── test_etl_schema.py       # Schema validation tests
+│   ├── test_forecast_eval.py    # Metrics calculation tests
+│   └── test_db_writes.py        # Database operation tests
+├── reports/
+│   └── README.md                # Report directory documentation
 ├── docs/
-│   ├── ARCHITECTURE.md          # System design diagram
-│   ├── DATA_DICTIONARY.md       # Table schemas & lineage
-│   ├── KPI_DEFINITIONS.md       # Metric calculations
-│   ├── BUSINESS_DECISIONS.md    # Decision framework
+│   ├── ARCHITECTURE.md          # System design with Mermaid diagrams
+│   ├── DATA_DICTIONARY.md       # Table schemas & sample queries
+│   ├── KPI_DEFINITIONS.md       # Metric calculations & business logic
+│   ├── BUSINESS_DECISIONS.md    # Decision framework & stakeholder personas
+│   ├── DASHBOARD_GUIDE.md       # Power BI user guide
 │   └── SETUP.md                 # Detailed installation guide
-├── scripts/
-│   └── run_daily.py             # Orchestration script
-├── prophet_improved.py          # Forecast generation
+├── prophet_improved.py          # Forecast generation with train/test split
 ├── db.py                        # Database connection helper
+├── checkcsv.py                  # Data quality validation
+├── docker-compose.yml           # NEW: PostgreSQL container setup
+├── .env.example                 # Environment variables template
+├── .pre-commit-config.yaml      # NEW: Pre-commit hooks (ruff, black)
+├── pyproject.toml               # NEW: Tool configuration (ruff, black, pytest)
+├── requirements.txt             # Python runtime dependencies
+├── requirements-dev.txt         # NEW: Development dependencies (pytest, ruff, black)
 ├── MainDash.pbix                # Power BI dashboard
 ├── KPIDashboard.png             # Screenshot: Executive KPIs
 ├── ForecastingDash.png          # Screenshot: Forecast vs. Actuals
 ├── database.png                 # Screenshot: Database schema
-├── .env.example                 # Environment variables template
-├── requirements.txt             # Python dependencies
-├── HIRING_MANAGER_REVIEW.md     # Portfolio assessment & upgrade plan
+├── HIRING_MANAGER_REVIEW.md     # 36-page portfolio assessment
+├── IMPROVEMENTS_SUMMARY.md      # Before/after comparison & ROI
+├── 14_DAY_PLAN.md               # Daily upgrade checklist
+├── SPRINT_SUMMARY.md            # Repo upgrade sprint documentation
+├── LICENSE                      # MIT License
 └── README.md                    # You are here
 ```
 
@@ -197,7 +229,28 @@ python -m vitamarkets.pipeline --run-all
 
 ## 🔄 Running the Pipeline
 
-### Full Pipeline (Recommended)
+### Option 1: Single-Command Pipeline (Recommended)
+
+```bash
+python -m vitamarkets.pipeline --run-all
+```
+
+This unified CLI command:
+1. Runs dbt transformations (staging → mart)
+2. Generates Prophet forecasts with train/test evaluation
+3. Computes accuracy metrics (MAE, MAPE, RMSE, bias, coverage)
+4. Writes results to database tables
+5. Generates `reports/forecast_eval.md` evaluation report
+6. Exports CSV files to `prophet_forecasts/`
+
+**Other commands:**
+```bash
+python -m vitamarkets.pipeline --forecast  # Run forecasting only
+python -m vitamarkets.pipeline --metrics   # Compute metrics only
+python -m vitamarkets.pipeline --report    # Generate report only
+```
+
+### Option 2: Legacy Orchestration Script
 
 ```bash
 python scripts/run_daily.py
@@ -209,7 +262,9 @@ This orchestrates:
 3. Data quality checks
 4. Logging to `logs/run_daily.log`
 
-### Step-by-Step Execution
+**Note:** Option 1 (`vitamarkets/pipeline.py`) is the newer, more comprehensive approach with better evaluation and reporting. Option 2 is maintained for backwards compatibility.
+
+### Step-by-Step Execution (Manual)
 
 ```bash
 # 1. Run dbt models
@@ -260,19 +315,23 @@ See [Data Dictionary](docs/DATA_DICTIONARY.md) for full schemas.
 - ✅ Incremental data processing (dbt models)
 - ✅ Connection management (SQLAlchemy + psycopg2)
 - ✅ Error handling and logging
+- ✅ Docker containerization (PostgreSQL)
+- ✅ Idempotent data loading (bootstrap script)
 
 ### SQL & Data Modeling
 - ✅ Complex aggregations (GROUP BY, window functions)
 - ✅ dbt model lineage (`ref()` macro)
 - ✅ Schema design (normalized staging, denormalized marts)
 - ✅ Data quality checks (null handling, outlier clipping)
+- ✅ Schema tests (unique, not_null, relationships, accepted_values)
 
 ### Statistical Forecasting
 - ✅ Time series analysis (Prophet)
 - ✅ Seasonality detection (weekly, yearly)
 - ✅ Outlier handling (99th percentile clipping)
 - ✅ Prediction intervals (80% confidence bands)
-- ✅ Model evaluation (MAE per SKU)
+- ✅ Rigorous model evaluation (train/test split, MAPE, MAE, RMSE, bias, coverage)
+- ✅ Baseline comparison (naive forecasting)
 
 ### Business Analytics
 - ✅ KPI definition and calculation
@@ -280,28 +339,43 @@ See [Data Dictionary](docs/DATA_DICTIONARY.md) for full schemas.
 - ✅ Business storytelling (insights → actions)
 - ✅ Stakeholder communication
 
+### Software Engineering & Testing
+- ✅ Unit testing (pytest with 16+ tests)
+- ✅ Integration testing (dbt schema tests)
+- ✅ Code quality (ruff linting, black formatting)
+- ✅ Pre-commit hooks
+- ✅ CI/CD pipeline (GitHub Actions)
+- ✅ Package structure (vitamarkets module)
+- ✅ CLI design (argparse)
+
 ### DevOps & Automation
-- ✅ Pipeline orchestration (Python subprocess)
+- ✅ Pipeline orchestration (unified CLI)
 - ✅ Environment management (virtualenv, .env files)
-- ✅ Scheduled execution (Windows Task Scheduler, cron-ready)
-- ✅ Version control (Git)
+- ✅ Docker containerization
+- ✅ Scheduled execution (cron-ready, Task Scheduler)
+- ✅ Version control (Git best practices)
+- ✅ Documentation (50+ pages)
 
 ---
 
-## 🚧 Known Limitations & Future Enhancements
+## 🚧 Future Enhancements
 
-**Current Limitations:**
-- **Evaluation:** In-sample MAE only (no train/test split) → See [upgrade plan](HIRING_MANAGER_REVIEW.md#5-forecasting-critique-ruthless)
-- **Testing:** No unit tests or dbt tests → Day 5-6 of upgrade plan
-- **CI/CD:** No GitHub Actions → Day 10 of upgrade plan
-- **Observability:** Basic logging, no structured metrics → Recommended addition
+**Completed Improvements (see [HIRING_MANAGER_REVIEW.md](HIRING_MANAGER_REVIEW.md)):**
+- ✅ Train/test split with rigorous forecast evaluation (MAPE%, RMSE, bias, coverage)
+- ✅ dbt schema tests (unique, not_null, relationships, accepted_values)
+- ✅ Comprehensive pytest suite for ETL, forecasting, and database operations
+- ✅ GitHub Actions CI/CD (lint + test jobs)
+- ✅ Docker Compose setup for reproducible PostgreSQL environment
+- ✅ Single-command pipeline with CLI (`python -m vitamarkets.pipeline --run-all`)
+- ✅ Code quality tools (ruff, black, pre-commit hooks)
 
-**Planned Enhancements (see HIRING_MANAGER_REVIEW.md):**
-1. Add train/test split for rigorous forecast evaluation (MAPE%, RMSE, bias)
-2. Implement dbt schema tests (unique, not_null, relationships)
-3. Add pytest suite for ETL and forecasting logic
-4. Set up GitHub Actions CI/CD
-5. Add Great Expectations for data quality validation
+**Planned Enhancements:**
+1. Add Great Expectations for advanced data quality validation
+2. Implement MLflow for experiment tracking and model versioning
+3. Add more sophisticated baseline models (SARIMA, seasonal naive) for comparison
+4. Expand dashboards with profitability analysis and customer segmentation
+5. Add automated alerting for forecast accuracy degradation
+6. Implement incremental forecasting (only re-train changed SKUs)
 
 ---
 

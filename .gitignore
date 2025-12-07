@@ -18,6 +18,7 @@ output/
 # Generated outputs (not tracked)
 logs/
 prophet_forecasts/
+prophet_forecasts_old/
 reports/*.md
 !reports/README.md
 
