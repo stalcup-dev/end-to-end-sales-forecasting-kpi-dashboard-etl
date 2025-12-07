@@ -15,12 +15,13 @@ Usage:
 import sys
 from pathlib import Path
 
-import pandas as pd
-from sqlalchemy import text
-
 # Add repo root to path to import db module
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from db import get_engine
+
+import pandas as pd  # noqa: E402
+from sqlalchemy import text  # noqa: E402
+
+from db import get_engine  # noqa: E402
 
 # Constants
 ROOT = Path(__file__).parent.parent
