@@ -11,6 +11,7 @@ Old v1 remains in prophet_improved.py for rollback and comparison.
 """
 
 import os
+import sys
 import logging
 import pandas as pd
 import numpy as np
@@ -19,7 +20,12 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 from prophet import Prophet
 from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sqlalchemy import text
 import warnings
+
+# Force UTF-8 output on Windows to prevent UnicodeEncodeError
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding='utf-8')
 
 warnings.filterwarnings("ignore")
 
@@ -29,6 +35,11 @@ TEST_DAYS_CV = 30          # For final holdout
 RUN_ID = datetime.now().strftime("%Y%m%d_%H%M")
 OUTPUT_DIR = f"prophet_forecasts_{RUN_ID}"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# Table naming strategy
+USE_VERSIONED_TABLES = True  # If True: prophet_forecasts_20251207_1915; If False: simple_prophet_forecast
+STABLE_VIEW_FORECASTS = "v_forecast_daily_latest"
+STABLE_VIEW_METRICS = "v_forecast_sku_metrics_latest"
 
 # Logging setup
 logging.basicConfig(
@@ -62,7 +73,7 @@ WHERE date >= '2018-01-01'
 ORDER BY sku, date
 """
 df_raw = pd.read_sql(query, engine)
-log.info(f"   → Loaded {len(df_raw):,} rows across {df_raw['sku'].nunique()} SKUs")
+log.info(f"   -> Loaded {len(df_raw):,} rows across {df_raw['sku'].nunique()} SKUs")
 
 # ------------------- 2. PREPROCESSING -------------------
 log.info("[2/7] Cleaning & preparing data...")
@@ -70,7 +81,7 @@ df = df_raw.copy()
 df = df[df['y'] >= 0].dropna(subset=['y', 'ds'])
 df['ds'] = pd.to_datetime(df['ds'])
 
-log.info(f"   → {len(df):,} rows after cleaning")
+log.info(f"   -> {len(df):,} rows after cleaning")
 
 # ------------------- 3. ELIGIBLE SKUs FILTER -------------------
 log.info("[3/7] Filtering eligible SKUs (730+ days span, 500+ units)...")
@@ -92,7 +103,7 @@ eligible_skus = sku_stats[
     (sku_stats["n_days"] >= 700)
 ]["sku"].tolist()
 
-log.info(f"   → {len(eligible_skus)} SKUs eligible out of {sku_stats['sku'].nunique()} total")
+log.info(f"   -> {len(eligible_skus)} SKUs eligible out of {sku_stats['sku'].nunique()} total")
 
 # ------------------- 4. DYNAMIC HOLIDAYS -------------------
 log.info("[4/7] Building dynamic holiday calendar (2018–2026)...")
@@ -120,7 +131,7 @@ for name, date_str, window in holiday_events:
             continue
 
 holidays_df = pd.DataFrame(holidays_list)
-log.info(f"   → {len(holidays_df)} holiday occurrences added")
+log.info(f"   -> {len(holidays_df)} holiday occurrences added")
 
 # ------------------- 5. PARALLEL FORECASTING FUNCTION -------------------
 def forecast_sku(sku_id):
@@ -272,10 +283,66 @@ if forecast_dfs:
     all_forecasts.to_csv(os.path.join(OUTPUT_DIR, "prophet_forecasts.csv"), index=False)
     metrics_df.to_csv(os.path.join(OUTPUT_DIR, "forecast_error_metrics.csv"), index=False)
 
-    # Save to PostgreSQL
+    # Save to PostgreSQL (versioned or fixed table names)
     log.info("[7/7] Writing results to PostgreSQL...")
-    all_forecasts.to_sql("prophet_forecasts", engine, schema="public", if_exists="replace", index=False)
-    metrics_df.to_sql("forecast_error_metrics", engine, schema="public", if_exists="replace", index=False)
+    
+    if USE_VERSIONED_TABLES:
+        table_forecasts = f"prophet_forecasts_{RUN_ID}"
+        table_metrics = f"prophet_forecast_metrics_{RUN_ID}"
+    else:
+        table_forecasts = "simple_prophet_forecast"
+        table_metrics = "forecast_error_metrics"
+    
+    all_forecasts.to_sql(table_forecasts, engine, schema="public", if_exists="replace", index=False)
+    metrics_df.to_sql(table_metrics, engine, schema="public", if_exists="replace", index=False)
+    
+    # Sanity check: verify written data
+    with engine.connect() as conn:
+        result = conn.execute(text(f"SELECT COUNT(*), MAX(ds) FROM public.{table_forecasts}"))
+        row = result.fetchone()
+        row_count, max_date = row[0], row[1]
+        log.info(f"   -> Wrote {row_count:,} rows to {table_forecasts}, max date: {max_date}")
+        
+        result_metrics = conn.execute(text(f"SELECT COUNT(*) FROM public.{table_metrics}"))
+        metrics_count = result_metrics.scalar()
+        log.info(f"   -> Wrote {metrics_count:,} rows to {table_metrics}")
+    
+    # Create/update stable views pointing to latest run
+    log.info(f"   -> Creating stable views ({STABLE_VIEW_FORECASTS}, {STABLE_VIEW_METRICS})...")
+    with engine.begin() as conn:
+        # View 1: Latest forecast data
+        conn.execute(text(f"""
+            CREATE OR REPLACE VIEW public.{STABLE_VIEW_FORECASTS} AS
+            SELECT 
+                ds AS forecast_date,
+                sku,
+                yhat AS predicted_units,
+                yhat_lower AS lower_bound_80pct,
+                yhat_upper AS upper_bound_80pct,
+                type AS data_type,
+                run_id AS forecast_run_id
+            FROM public.{table_forecasts}
+            ORDER BY sku, ds
+        """))
+        
+        # View 2: Latest metrics
+        conn.execute(text(f"""
+            CREATE OR REPLACE VIEW public.{STABLE_VIEW_METRICS} AS
+            SELECT 
+                sku,
+                test_mae AS mean_absolute_error,
+                test_rmse AS root_mean_squared_error,
+                test_mape_pct AS mean_absolute_pct_error,
+                test_bias AS forecast_bias,
+                test_coverage_pct AS prediction_interval_coverage_pct,
+                n_train AS training_days,
+                n_test AS test_days,
+                run_id AS forecast_run_id
+            FROM public.{table_metrics}
+            ORDER BY test_mape_pct ASC
+        """))
+    
+    log.info("   -> Stable views updated successfully")
 
     # ------------------- FINAL SUMMARY -------------------
     log.info("\n" + "="*70)
@@ -297,7 +364,23 @@ if forecast_dfs:
     log.info(f"\nFORECAST QUALITY: {quality}")
 
     log.info(f"\nResults saved in: {OUTPUT_DIR}")
-    log.info(f"Next: Refresh Power BI → Check 'Forecast vs Actuals' dashboard")
+    log.info(f"Next: Refresh Power BI -> Check 'Forecast vs Actuals' dashboard")
+    
+    # Print Power BI connection contract
+    log.info("\n" + "="*70)
+    log.info("POWER BI CONNECTION CONTRACT")
+    log.info("="*70)
+    log.info("Power BI should query these stable views (auto-update on each run):")
+    log.info("")
+    log.info(f"  1. Forecast Data: public.{STABLE_VIEW_FORECASTS}")
+    log.info("     SELECT forecast_date, sku, predicted_units, lower_bound_80pct,")
+    log.info("            upper_bound_80pct, data_type FROM public.v_forecast_daily_latest;")
+    log.info("")
+    log.info(f"  2. Accuracy Metrics: public.{STABLE_VIEW_METRICS}")
+    log.info("     SELECT sku, mean_absolute_pct_error, mean_absolute_error,")
+    log.info("            forecast_bias FROM public.v_forecast_sku_metrics_latest;")
+    log.info("")
+    log.info("DO NOT query versioned tables directly (prophet_forecasts_YYYYMMDD_HHMM).")
     log.info("="*70)
 else:
     log.error("No forecasts generated. Check logs above.")

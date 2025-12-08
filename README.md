@@ -216,6 +216,61 @@ python -m vitamarkets.pipeline --run-all
 
 ---
 
+## 📊 Power BI Connection Contract
+
+**IMPORTANT:** Power BI dashboards should connect to **stable views only**, not underlying tables.
+
+### Canonical Data Objects
+
+| View Name | Purpose | Refresh Behavior |
+|-----------|---------|------------------|
+| `public.v_forecast_daily_latest` | Time series forecast data (actuals + predictions) | Auto-updates on each forecast run |
+| `public.v_forecast_sku_metrics_latest` | Per-SKU accuracy metrics (MAPE, MAE, bias, coverage) | Auto-updates on each forecast run |
+
+### Connection Setup in Power BI
+
+1. **Get Data** → **PostgreSQL Database**
+2. **Server:** `localhost:5432` (or your hosted DB)
+3. **Database:** `vitamarkets`
+4. **Data Connectivity Mode:** DirectQuery or Import
+5. **Tables to Import:**
+   - ✅ `public.v_forecast_daily_latest` (forecast data)
+   - ✅ `public.v_forecast_sku_metrics_latest` (metrics)
+   - ✅ `public.mart_sales_summary` (actuals for KPIs)
+   - ❌ **DO NOT** query versioned tables like `prophet_forecasts_20251207_1915`
+
+### Sample Queries
+
+**Forecast vs Actuals Chart:**
+```sql
+SELECT 
+    forecast_date,
+    sku,
+    predicted_units,
+    lower_bound_80pct,
+    upper_bound_80pct,
+    data_type  -- 'actual' or 'forecast'
+FROM public.v_forecast_daily_latest
+WHERE forecast_date >= CURRENT_DATE - INTERVAL '180 days'
+ORDER BY sku, forecast_date;
+```
+
+**Top 10 Most Accurate SKUs:**
+```sql
+SELECT 
+    sku,
+    mean_absolute_pct_error AS mape_pct,
+    mean_absolute_error AS mae,
+    prediction_interval_coverage_pct AS coverage
+FROM public.v_forecast_sku_metrics_latest
+ORDER BY mean_absolute_pct_error ASC
+LIMIT 10;
+```
+
+See `sql/contracts.sql` for full schema definitions and additional examples.
+
+---
+
 ## 📖 Documentation
 
 - **[Setup Guide](docs/SETUP.md)** - Step-by-step installation instructions
