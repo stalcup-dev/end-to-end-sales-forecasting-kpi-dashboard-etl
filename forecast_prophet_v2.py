@@ -10,24 +10,26 @@ DO NOT DELETE — This is the upgraded parallel version with:
 Old v1 remains in prophet_improved.py for rollback and comparison.
 """
 
+import logging
 import os
 import sys
-import logging
-import pandas as pd
-import numpy as np
+import warnings
 from datetime import datetime
-from tqdm import tqdm
+
+import numpy as np
+import pandas as pd
 from joblib import Parallel, delayed
 from prophet import Prophet
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sqlalchemy import text
-import warnings
 
 # Force UTF-8 output on Windows to prevent UnicodeEncodeError
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding='utf-8')
 
 warnings.filterwarnings("ignore")
+
+from db import get_engine  # noqa: E402
 
 # ------------------- CONFIG -------------------
 FORECAST_DAYS = 90
@@ -57,13 +59,12 @@ log.info("VITA MARKETS FORECASTING PIPELINE v2.0")
 log.info("="*70)
 
 # ------------------- DB CONNECTION -------------------
-from db import get_engine
 engine = get_engine()
 
 # ------------------- 1. DATA INGESTION -------------------
 log.info("[1/7] Loading data from mart_sales_summary...")
 query = """
-SELECT 
+SELECT
     date::date as ds,
     sku,
     total_units_sold as y,
@@ -285,28 +286,28 @@ if forecast_dfs:
 
     # Save to PostgreSQL (versioned or fixed table names)
     log.info("[7/7] Writing results to PostgreSQL...")
-    
+
     if USE_VERSIONED_TABLES:
         table_forecasts = f"prophet_forecasts_{RUN_ID}"
         table_metrics = f"prophet_forecast_metrics_{RUN_ID}"
     else:
         table_forecasts = "simple_prophet_forecast"
         table_metrics = "forecast_error_metrics"
-    
+
     all_forecasts.to_sql(table_forecasts, engine, schema="public", if_exists="replace", index=False)
     metrics_df.to_sql(table_metrics, engine, schema="public", if_exists="replace", index=False)
-    
+
     # Sanity check: verify written data
     with engine.connect() as conn:
         result = conn.execute(text(f"SELECT COUNT(*), MAX(ds) FROM public.{table_forecasts}"))
         row = result.fetchone()
         row_count, max_date = row[0], row[1]
         log.info(f"   -> Wrote {row_count:,} rows to {table_forecasts}, max date: {max_date}")
-        
+
         result_metrics = conn.execute(text(f"SELECT COUNT(*) FROM public.{table_metrics}"))
         metrics_count = result_metrics.scalar()
         log.info(f"   -> Wrote {metrics_count:,} rows to {table_metrics}")
-    
+
     # Create/update stable views pointing to latest run
     log.info(f"   -> Creating stable views ({STABLE_VIEW_FORECASTS}, {STABLE_VIEW_METRICS}) and compatibility views...")
     with engine.begin() as conn:
@@ -319,7 +320,7 @@ if forecast_dfs:
         # View 1: Latest forecast data (stable contract)
         conn.execute(text(f"""
             CREATE OR REPLACE VIEW public.{STABLE_VIEW_FORECASTS} AS
-            SELECT 
+            SELECT
                 CAST(ds AS date) AS forecast_date,
                 sku,
                 yhat AS predicted_units,
@@ -334,7 +335,7 @@ if forecast_dfs:
         # View 2: Latest metrics (stable contract)
         conn.execute(text(f"""
             CREATE OR REPLACE VIEW public.{STABLE_VIEW_METRICS} AS
-            SELECT 
+            SELECT
                 sku,
                 test_mae AS mean_absolute_error,
                 test_rmse AS root_mean_squared_error,
@@ -351,7 +352,7 @@ if forecast_dfs:
         # Compatibility view: legacy Power BI queries still hit simple_prophet_forecast
         conn.execute(text("""
             CREATE OR REPLACE VIEW public.simple_prophet_forecast AS
-            SELECT 
+            SELECT
                 forecast_date AS ds,
                 sku,
                 predicted_units AS yhat,
@@ -365,7 +366,7 @@ if forecast_dfs:
         # Compatibility view: legacy metrics table name
         conn.execute(text("""
             CREATE OR REPLACE VIEW public.forecast_error_metrics AS
-            SELECT 
+            SELECT
                 sku,
                 mean_absolute_error AS test_mae,
                 root_mean_squared_error AS test_rmse,
@@ -377,7 +378,7 @@ if forecast_dfs:
                 forecast_run_id AS run_id
             FROM public.v_forecast_sku_metrics_latest
         """))
-    
+
     log.info("   -> Stable and compatibility views updated successfully")
 
     # ------------------- FINAL SUMMARY -------------------
@@ -400,8 +401,8 @@ if forecast_dfs:
     log.info(f"\nFORECAST QUALITY: {quality}")
 
     log.info(f"\nResults saved in: {OUTPUT_DIR}")
-    log.info(f"Next: Refresh Power BI -> Check 'Forecast vs Actuals' dashboard")
-    
+    log.info("Next: Refresh Power BI -> Check 'Forecast vs Actuals' dashboard")
+
     # Print Power BI connection contract
     log.info("\n" + "="*70)
     log.info("POWER BI CONNECTION CONTRACT")
