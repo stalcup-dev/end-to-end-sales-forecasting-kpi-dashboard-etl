@@ -1,0 +1,21 @@
+# Copilot Instructions
+
+- **Architecture snapshot:** CSV source (`vitamarkets_ultrarealistic_sampledataset.csv`) → Postgres (`vitamarkets_raw`) → dbt (`stg_vitamarkets` view, `mart_sales_summary` table) → Prophet forecasts/metrics (`simple_prophet_forecast`, `forecast_error_metrics`) → Power BI. Keep this flow intact when adding steps.
+- **Primary entrypoint:** Use `python -m vitamarkets.pipeline --run-all` (or `--etl | --forecast | --metrics | --report`). It runs dbt (deps + run in `vitamarkets_dbt/vitamarkets`), trains Prophet with 90-day horizon and 30-day holdout metrics, writes tables/CSVs to `prophet_forecasts/`, and emits `reports/forecast_eval.md`.
+- **Bootstrap data fast:** `python scripts/bootstrap.py` seeds Postgres with schema (`sql/init.sql`) and sample CSV; it is idempotent and uses `to_sql(..., if_exists="replace")` for repeatable runs.
+- **Legacy runner:** `python scripts/run_daily.py` still works (dbt → `etl/refresh_actuals.py` → `prophet_improved.py` → `checkcsv.py`) and logs to `logs/run_daily.log`, but prefer the unified pipeline.
+- **DB connectivity:** `db.get_engine()` loads `.env` (`DB_URI` or `PG_*`). Every script assumes the env file exists; avoid hardcoding URIs. Connection uses `pool_pre_ping=True`.
+- **dbt conventions:** Models live in `vitamarkets_dbt/vitamarkets/models/` (`stg_vitamarkets.sql`, `mart_sales_summary.sql`). Run from that folder; ensure `dbt deps` precedes `dbt run`. Grain is daily per date/sku/channel/country/customer_segment.
+- **Forecasting rules:** Eligibility requires ≥2 years span and >500 total units per SKU; outliers clipped at 99th percentile per SKU; prediction intervals at 80% width; metrics computed on a 30-day holdout (MAE, RMSE, MAPE, bias, coverage). Preserve these defaults unless you also update documentation and tests.
+- **Actuals refresh:** `etl/refresh_actuals.py` expects `data/actuals_latest.csv` with required columns (`date`, `sku`, `channel`, `country`, `customer_segment`, `total_units_sold`, `total_order_value`, optional promo flags). It replaces `mart_sales_summary` on load; switch to append/upsert consciously.
+- **Outputs to expect:** Tables `mart_sales_summary`, `simple_prophet_forecast`, `forecast_error_metrics`; CSVs under `prophet_forecasts/`; markdown report `reports/forecast_eval.md`; optional logs in `logs/run_daily.log`.
+- **Testing:** `pytest` in `tests/` uses in-memory SQLite fixtures—no Postgres needed. Tests cover cleaning, eligibility filters, outlier clipping, metric math, and idempotent writes; keep schema/column names aligned with these expectations.
+- **Style/tooling:** Python 3.11, pandas + Prophet + SQLAlchemy. Lint/format via ruff/black configured in `pyproject.toml`; pre-commit hooks are present. Favor pandas + `to_sql` for writes and avoid raw SQL outside dbt unless necessary.
+- **Docs to trust:** `docs/ARCHITECTURE.md` (data flow), `docs/SETUP.md` (full setup/run commands), `docs/DATA_DICTIONARY.md` (schemas), and root `README.md` (quick start, CLI flags). Keep changes consistent with these sources.
+- **Dashboards:** `MainDash.pbix` expects Postgres tables above; keep column names stable when modifying models to avoid breaking Power BI.
+- **Common commands (Windows-friendly):**
+  - `python scripts/bootstrap.py`
+  - `python -m vitamarkets.pipeline --run-all` (or flag-specific)
+  - `cd vitamarkets_dbt/vitamarkets; dbt deps; dbt run`
+  - `pytest -q`
+- **When adding features:** Extend the unified pipeline CLI first; update sample data/contracts, docs, and tests in lockstep. Preserve idempotency of loaders (`if_exists="replace"`) unless explicitly shifting to incremental logic.
