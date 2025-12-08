@@ -218,56 +218,107 @@ python -m vitamarkets.pipeline --run-all
 
 ## 📊 Power BI Connection Contract
 
-**IMPORTANT:** Power BI dashboards should connect to **stable views only**, not underlying tables.
+**IMPORTANT:** Power BI must query the compatibility views below (they always point to the latest run). Do **not** hit versioned tables directly.
 
-### Canonical Data Objects
+### Canonical Objects for Power BI
 
-| View Name | Purpose | Refresh Behavior |
-|-----------|---------|------------------|
-| `public.v_forecast_daily_latest` | Time series forecast data (actuals + predictions) | Auto-updates on each forecast run |
-| `public.v_forecast_sku_metrics_latest` | Per-SKU accuracy metrics (MAPE, MAE, bias, coverage) | Auto-updates on each forecast run |
+| Object | Purpose | Refresh Behavior |
+|--------|---------|------------------|
+| `public.simple_prophet_forecast` | Forecast data (actuals + predictions) with legacy column names | Auto-updates every pipeline run via CREATE OR REPLACE VIEW |
+| `public.forecast_error_metrics` | Per-SKU accuracy metrics (legacy schema) | Auto-updates every pipeline run |
+| `public.v_forecast_daily_latest` | Stable “latest” forecast view (modern column names) | Auto-updates every pipeline run |
+| `public.v_forecast_sku_metrics_latest` | Stable “latest” metrics view (modern column names) | Auto-updates every pipeline run |
 
-### Connection Setup in Power BI
+### Connection Setup (Power BI Desktop)
 
 1. **Get Data** → **PostgreSQL Database**
-2. **Server:** `localhost:5432` (or your hosted DB)
+2. **Server:** `localhost:5432` (or your DB host)
 3. **Database:** `vitamarkets`
-4. **Data Connectivity Mode:** DirectQuery or Import
-5. **Tables to Import:**
-   - ✅ `public.v_forecast_daily_latest` (forecast data)
-   - ✅ `public.v_forecast_sku_metrics_latest` (metrics)
-   - ✅ `public.mart_sales_summary` (actuals for KPIs)
-   - ❌ **DO NOT** query versioned tables like `prophet_forecasts_20251207_1915`
+4. **Mode:** DirectQuery or Import
+5. **Import these objects:**
+   - ✅ `public.simple_prophet_forecast`
+   - ✅ `public.forecast_error_metrics`
+   - (Optional) `public.mart_sales_summary` for actuals-only KPIs
+   - ❌ Do **NOT** query `prophet_forecasts_*` versioned tables
+
+### How to Verify a Refresh Happened
+
+Run these checks (pgAdmin / psql):
+
+```sql
+SELECT MAX(ds) AS max_date, MAX(forecast_run_id) AS max_run
+FROM public.simple_prophet_forecast;
+
+SELECT MAX(run_id) AS max_run
+FROM public.forecast_error_metrics;
+```
 
 ### Sample Queries
 
 **Forecast vs Actuals Chart:**
 ```sql
-SELECT 
-    forecast_date,
-    sku,
-    predicted_units,
-    lower_bound_80pct,
-    upper_bound_80pct,
-    data_type  -- 'actual' or 'forecast'
-FROM public.v_forecast_daily_latest
-WHERE forecast_date >= CURRENT_DATE - INTERVAL '180 days'
-ORDER BY sku, forecast_date;
+SELECT ds AS date,
+       sku,
+       yhat,
+       yhat_lower,
+       yhat_upper,
+       data_type
+FROM public.simple_prophet_forecast
+WHERE ds >= CURRENT_DATE - INTERVAL '180 days'
+ORDER BY sku, ds;
 ```
 
 **Top 10 Most Accurate SKUs:**
 ```sql
-SELECT 
-    sku,
-    mean_absolute_pct_error AS mape_pct,
-    mean_absolute_error AS mae,
-    prediction_interval_coverage_pct AS coverage
-FROM public.v_forecast_sku_metrics_latest
-ORDER BY mean_absolute_pct_error ASC
+SELECT sku,
+       test_mape_pct AS mape_pct,
+       test_mae,
+       test_rmse,
+       test_coverage_pct AS coverage
+FROM public.forecast_error_metrics
+ORDER BY test_mape_pct ASC
 LIMIT 10;
 ```
 
 See `sql/contracts.sql` for full schema definitions and additional examples.
+
+---
+
+## 🚧 Future Improvements / Roadmap
+
+- Fix Power BI aggregations: show MAE/MAPE/RMSE/bias/coverage as AVERAGE (or median/weighted), never SUM, to avoid inflating errors in visuals.
+- Weighted rollups: add volume-weighted MAPE (weight by actual units if present; else fallback to n_obs) and provide median MAPE across SKUs for robustness.
+- Interval calibration: compare `prediction_interval_coverage_pct` to the 80% target; widen intervals when coverage < 80% or tighten when consistently > 90%.
+- Promo/price regressors: incorporate `promo_flag` rigorously (and price/temperature when available) with backtests to quantify lift vs. baseline.
+- Rolling backtests: schedule weekly rolling backtests (e.g., expanding/rolling windows) to monitor drift and catch degradation early.
+- Holiday tuning: refine holiday windows by SKU category and add movable holidays (Easter/Thanksgiving exact dates) for better seasonality fit.
+- Hierarchical/reconciliation: explore bottom-up or MinT reconciliation across channel/country to ensure coherent aggregates.
+- Baselines & benchmarks: add seasonal-naive and Prophet-without-regressors benchmarks for honest model comparison.
+- Interval targets by SKU: set SKU-level coverage targets (e.g., higher for high-revenue SKUs) and alert when breached.
+- Deployment hygiene: add automated view validation + volume checks in CI to block deploys when contracts break.
+
+---
+
+## 📌 Category-by-Category Plan (what to do and why)
+
+1) **Classic Seasonal** — Strong seasonality, mild trend; keep Prophet yearly+weekly; holidays on; consider weekly aggregation if daily noise is high. Success: lower MAPE and coverage near target.
+2) **Flagship Growth** — Trend dominates; allow flexible changepoints, consider cap/floor if saturation; run rolling backtests to avoid lucky splits. Success: bias ~0, MAE trending down.
+3) **Promo Dependent** — Spikes driven by promos; add regressors (`promo_flag`, ideally discount depth/ad spend/email). Evaluate promo vs non-promo separately. Success: lower RMSE on spikes, better coverage.
+4) **Viral Spike** — Rare surges; aim for early detection + honest uncertainty. Baseline normal demand, add anomaly/alert layer, widen intervals. Success: coverage near target; not chasing low MAPE.
+5) **Supply Disrupted** — Sales constrained by stock; separate demand vs availability. If stockout flags exist, exclude/adjust OOS days; at minimum cap zero-runs. Success: reduce negative bias and stabilize.
+6) **Discontinued** — Demand goes to zero; rule-based forecast to 0 after discontinue date (or simple decay). Success: prevent phantom demand.
+7) **Cannibalized** — Demand shifts to other SKUs; short-term treat as structural break (recent window), better with related-SKU regressors/category modeling. Success: reduce post-break bias.
+8) **Slow Decliner** — Gentle downtrend; prefer stable simple models (rolling avg/ETS/Prophet with constrained trend). Success: low bias + decent MAE.
+
+### Minimum “real improvement” (high leverage, low scope)
+- Add regressors for **Promo Dependent**: `promo_flag` at minimum; discount depth/ad spend when available.
+- Handle **Discontinued** with a rule: hard-stop forecasts at 0 after discontinue date.
+- Fix evaluation: **rolling-origin backtest** (3–5 cutoffs) and use median performance.
+
+### Dashboard alignment
+- Stop showing **Sum of MAE**; use **Average/median** for MAE/MAPE/RMSE/bias/coverage.
+- Add slicer by `data_type` (actual vs forecast).
+- Show targets per type (e.g., coverage target 80%, bias near 0).
 
 ---
 

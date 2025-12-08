@@ -308,11 +308,17 @@ if forecast_dfs:
         log.info(f"   -> Wrote {metrics_count:,} rows to {table_metrics}")
     
     # Create/update stable views pointing to latest run
-    log.info(f"   -> Creating stable views ({STABLE_VIEW_FORECASTS}, {STABLE_VIEW_METRICS})...")
+    log.info(f"   -> Creating stable views ({STABLE_VIEW_FORECASTS}, {STABLE_VIEW_METRICS}) and compatibility views...")
     with engine.begin() as conn:
-        # View 1: Latest forecast data
+        # Drop compatibility views first to allow column shape changes safely
+        conn.execute(text("DROP VIEW IF EXISTS public.simple_prophet_forecast"))
+        conn.execute(text("DROP VIEW IF EXISTS public.forecast_error_metrics"))
+        conn.execute(text(f"DROP VIEW IF EXISTS public.{STABLE_VIEW_FORECASTS}"))
+        conn.execute(text(f"DROP VIEW IF EXISTS public.{STABLE_VIEW_METRICS}"))
+
+        # View 1: Latest forecast data (stable)
         conn.execute(text(f"""
-            CREATE OR REPLACE VIEW public.{STABLE_VIEW_FORECASTS} AS
+            CREATE VIEW public.{STABLE_VIEW_FORECASTS} AS
             SELECT 
                 ds AS forecast_date,
                 sku,
@@ -324,10 +330,10 @@ if forecast_dfs:
             FROM public.{table_forecasts}
             ORDER BY sku, ds
         """))
-        
-        # View 2: Latest metrics
+
+        # View 2: Latest metrics (stable)
         conn.execute(text(f"""
-            CREATE OR REPLACE VIEW public.{STABLE_VIEW_METRICS} AS
+            CREATE VIEW public.{STABLE_VIEW_METRICS} AS
             SELECT 
                 sku,
                 test_mae AS mean_absolute_error,
@@ -341,8 +347,38 @@ if forecast_dfs:
             FROM public.{table_metrics}
             ORDER BY test_mape_pct ASC
         """))
+
+        # Compatibility view: legacy Power BI queries still hit simple_prophet_forecast
+        conn.execute(text(f"""
+            CREATE VIEW public.simple_prophet_forecast AS
+            SELECT 
+                forecast_date AS ds,
+                sku,
+                predicted_units AS yhat,
+                lower_bound_80pct AS yhat_lower,
+                upper_bound_80pct AS yhat_upper,
+                data_type,
+                forecast_run_id
+            FROM public.{STABLE_VIEW_FORECASTS}
+        """))
+
+        # Compatibility view: legacy metrics table name
+        conn.execute(text(f"""
+            CREATE VIEW public.forecast_error_metrics AS
+            SELECT 
+                sku,
+                mean_absolute_error AS test_mae,
+                root_mean_squared_error AS test_rmse,
+                mean_absolute_pct_error AS test_mape_pct,
+                forecast_bias AS test_bias,
+                prediction_interval_coverage_pct AS test_coverage_pct,
+                training_days AS n_train,
+                test_days AS n_test,
+                forecast_run_id AS run_id
+            FROM public.{STABLE_VIEW_METRICS}
+        """))
     
-    log.info("   -> Stable views updated successfully")
+    log.info("   -> Stable and compatibility views updated successfully")
 
     # ------------------- FINAL SUMMARY -------------------
     log.info("\n" + "="*70)
@@ -370,15 +406,19 @@ if forecast_dfs:
     log.info("\n" + "="*70)
     log.info("POWER BI CONNECTION CONTRACT")
     log.info("="*70)
-    log.info("Power BI should query these stable views (auto-update on each run):")
+    log.info("Power BI should query these compatibility views (auto-update every run):")
     log.info("")
-    log.info(f"  1. Forecast Data: public.{STABLE_VIEW_FORECASTS}")
-    log.info("     SELECT forecast_date, sku, predicted_units, lower_bound_80pct,")
-    log.info("            upper_bound_80pct, data_type FROM public.v_forecast_daily_latest;")
+    log.info("  1) Forecast Data: public.simple_prophet_forecast")
+    log.info("     SELECT ds, sku, yhat, yhat_lower, yhat_upper, data_type, forecast_run_id")
+    log.info("     FROM public.simple_prophet_forecast;")
     log.info("")
-    log.info(f"  2. Accuracy Metrics: public.{STABLE_VIEW_METRICS}")
-    log.info("     SELECT sku, mean_absolute_pct_error, mean_absolute_error,")
-    log.info("            forecast_bias FROM public.v_forecast_sku_metrics_latest;")
+    log.info("  2) Accuracy Metrics: public.forecast_error_metrics")
+    log.info("     SELECT sku, test_mape_pct, test_mae, test_rmse, test_bias, test_coverage_pct")
+    log.info("     FROM public.forecast_error_metrics;")
+    log.info("")
+    log.info("Sanity check SQL:")
+    log.info("  SELECT MAX(ds), MAX(forecast_run_id) FROM public.simple_prophet_forecast;")
+    log.info("  SELECT MAX(mean_absolute_pct_error) FROM public.v_forecast_sku_metrics_latest;")
     log.info("")
     log.info("DO NOT query versioned tables directly (prophet_forecasts_YYYYMMDD_HHMM).")
     log.info("="*70)
