@@ -9,9 +9,6 @@ This script:
 5. Evaluates on test set (MAPE, MAE, RMSE, Bias)
 6. Generates 90-day forecasts
 7. Writes results to PostgreSQL and CSV
-
-Author: Improved for hiring portfolio
-Date: 2025-12-07
 """
 
 import os
