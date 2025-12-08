@@ -176,10 +176,8 @@ def run_forecast():
     # Write to database
     print("\n✅ Writing forecasts to database...")
 
-    # Drop views and old tables first (to_sql will error on views with if_exists="replace")
+    # Drop tables first (to_sql will error on views with if_exists="replace")
     with engine.begin() as conn:
-        conn.execute(text("DROP VIEW IF EXISTS public.simple_prophet_forecast CASCADE"))
-        conn.execute(text("DROP VIEW IF EXISTS public.forecast_error_metrics CASCADE"))
         conn.execute(text("DROP TABLE IF EXISTS public.simple_prophet_forecast CASCADE"))
         conn.execute(text("DROP TABLE IF EXISTS public.forecast_error_metrics CASCADE"))
 
