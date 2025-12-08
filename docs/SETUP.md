@@ -1,6 +1,36 @@
 # Getting Started
 
+> **Last Updated:** 2025-01-16  
+> **Estimated Time:** 10 minutes
+
 Complete setup instructions for running the Vita Markets analytics pipeline locally.
+
+---
+
+## Quick Start (TL;DR)
+
+```powershell
+# 1. Clone & setup
+git clone https://github.com/stalcup-dev/end-to-end-sales-forecasting-kpi-dashboard-etl.git
+cd end-to-end-sales-forecasting-kpi-dashboard-etl
+python -m venv .venv; .venv\Scripts\activate
+pip install -r requirements.txt
+
+# 2. Start Postgres (Docker)
+docker compose up -d
+
+# 3. Bootstrap database + data
+cp .env.example .env   # Edit if needed
+python scripts/bootstrap.py
+
+# 4. Run pipeline
+python forecast_prophet_v2.py
+
+# 5. Verify
+psql -U postgres -h localhost -d vitamarkets -c "SELECT COUNT(*) FROM simple_prophet_forecast;"
+```
+
+---
 
 ## Prerequisites
 
@@ -166,9 +196,33 @@ print(f'✅ Setup verified! Found {df.iloc[0,0]} rows in vitamarkets_raw')
 
 ## Running the Pipeline
 
-### Option A: Full Pipeline (Recommended)
+### Option A: Recommended (forecast_prophet_v2.py)
 
-Run the complete end-to-end pipeline:
+Run the production forecasting pipeline:
+
+```bash
+python forecast_prophet_v2.py
+```
+
+**What this does:**
+1. Loads data from `mart_sales_summary`
+2. Filters eligible SKUs (≥2 years, >500 units)
+3. Trains Prophet models (parallel via joblib)
+4. Computes 5 metrics on 30-day holdout
+5. Writes versioned tables + stable views
+6. Creates CSVs in `prophet_forecasts/`
+
+**Duration:** ~1-2 minutes
+
+**Output tables:**
+- `prophet_forecasts_YYYYMMDD_HHMM` (versioned data)
+- `prophet_forecast_metrics_YYYYMMDD_HHMM` (versioned metrics)
+- `simple_prophet_forecast` (stable view for Power BI)
+- `forecast_error_metrics` (stable view for Power BI)
+
+### Option B: Legacy Pipeline (scripts/run_daily.py)
+
+Run the original orchestration script:
 
 ```bash
 python scripts/run_daily.py
@@ -184,7 +238,7 @@ python scripts/run_daily.py
 
 **Duration:** ~2-5 minutes depending on hardware
 
-### Option B: Step-by-Step Execution
+### Option C: Step-by-Step Execution
 
 Run each component individually for debugging:
 

@@ -1,12 +1,14 @@
-# 📈 Vita Markets: Automated Sales Forecasting & KPI Dashboard
+# Vita Markets: End-to-End Sales Forecasting & KPI Dashboard
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![dbt](https://img.shields.io/badge/dbt-1.7-orange.svg)](https://www.getdbt.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-blue.svg)](https://www.postgresql.org/)
-[![Tests](https://github.com/stalcup-dev/end-to-end-sales-forecasting-kpi-dashboard-etl/actions/workflows/ci.yml/badge.svg)](https://github.com/stalcup-dev/end-to-end-sales-forecasting-kpi-dashboard-etl/actions/workflows/ci.yml)
+[![PostgreSQL 14](https://img.shields.io/badge/PostgreSQL-14-316192?logo=postgresql)](https://www.postgresql.org/)
+[![dbt 1.7](https://img.shields.io/badge/dbt-1.7-FF694B?logo=dbt)](https://www.getdbt.com/)
+[![Prophet 1.1.5](https://img.shields.io/badge/Prophet-1.1.5-blue?logo=meta)](https://facebook.github.io/prophet/)
+[![Power BI](https://img.shields.io/badge/Power%20BI-F2C811?logo=powerbi)](https://powerbi.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://github.com/stalcup-dev/end-to-end-sales-forecasting-kpi-dashboard-etl/actions/workflows/ci.yml/badge.svg)](https://github.com/stalcup-dev/end-to-end-sales-forecasting-kpi-dashboard-etl/actions)
 
-> **An end-to-end analytics pipeline** that ingests daily sales data, transforms it using dbt, generates 90-day SKU-level forecasts with Prophet, and delivers executive-ready dashboards in Power BI. Built to mirror the work of a Data Analyst or Analytics Engineer at a DTC e-commerce company.
+> **An end-to-end analytics pipeline** that ingests daily sales data, transforms it using dbt, generates 90-day SKU-level forecasts with Prophet, and delivers executive-ready dashboards in Power BI. Built to mirror the work of a **Data Analyst** at a DTC e-commerce company.
 
 ![Executive KPI Dashboard](KPIDashboard.png)
 *Real-time KPI tracking: 150% YoY growth in New Launch SKU, automated 90-day forecasts for inventory planning*
@@ -15,13 +17,16 @@
 
 ## 🎯 What This Project Demonstrates
 
-This portfolio project showcases the complete analytics workflow a hiring manager would expect from a **Junior → Mid-Level Data Analyst or Analytics Engineer**:
+A complete analytics workflow from raw data to executive dashboards:
 
-- **End-to-end pipeline orchestration**: Automated ETL (Python + SQLAlchemy) → transformation (dbt) → forecasting (Prophet) → visualization (Power BI)
-- **Production-grade data modeling**: Star schema design with dbt, schema tests, and data quality validation
-- **Statistical forecasting**: Prophet with weekly/yearly seasonality, custom holidays, and 90-day forecast horizon
-- **Business storytelling**: Dashboards that answer "Which SKUs are growing?" and "How accurate are our forecasts?" with actionable insights
-- **Reproducibility**: Clone-and-run setup with PostgreSQL, documented setup steps, and sample data included
+| Skill Area | What I Built |
+|------------|-------------|
+| **SQL & Data Modeling** | Star schema design with dbt, staging/mart layers, complex aggregations, window functions |
+| **Statistical Analysis** | Time series forecasting with Prophet, train/test evaluation, 5 accuracy metrics |
+| **Data Visualization** | Executive dashboards in Power BI with KPIs, forecast vs. actuals, accuracy gauges |
+| **ETL/Data Pipelines** | Automated CSV → PostgreSQL → dbt → Prophet → Power BI pipeline |
+| **Business Storytelling** | Dashboards that answer "Which SKUs are growing?" and "How accurate are our forecasts?" |
+| **Data Quality** | dbt schema tests, pytest suite (34+ tests), CI/CD with GitHub Actions |
 
 **Business Context:**  
 Vita Markets is a simulated Direct-to-Consumer vitamin/supplement retailer. The pipeline answers real commercial questions:
@@ -31,154 +36,172 @@ Vita Markets is a simulated Direct-to-Consumer vitamin/supplement retailer. The 
 
 ---
 
-## 📊 Key Insights
+## 📊 Key Business Insights
 
-### Business Impact
+### Results Delivered
 
-- **New Launch SKU** delivered 150% YoY growth, fully offsetting revenue losses from discontinued products
-- **Flagship Growth** remains the top revenue driver with consistent 25% YoY growth
-- **Automated pipeline** eliminates manual reporting (4 hours/week → 0 hours)
-- **Forecasting enables** proactive inventory management and reduces stockout risk
+- **New Launch SKU** delivered **150% YoY growth**, fully offsetting revenue losses from discontinued products
+- **Flagship Growth** remains the top revenue driver with consistent **25% YoY growth**
+- **Automated pipeline** eliminates manual reporting (**4 hours/week → 0 hours**)
+- **Forecasting** enables proactive inventory management and reduces stockout risk
 
-### Forecasting Approach
+### Forecasting Performance
 
-- **Model:** Facebook Prophet with weekly/yearly seasonality + custom holidays (Black Friday, Christmas)
-- **Eligibility:** SKUs with 2+ years of data and >500 units sold (ensures forecast stability)
-- **Horizon:** 90-day forecasts updated daily
-- **Evaluation:** Proper train/test split with 30-day holdout test set
-- **Accuracy:** Test set MAPE 12.3% median, MAE, RMSE, bias, and 80% prediction interval coverage tracked per SKU
-- **Metrics:** See `forecast_error_metrics` table for detailed per-SKU performance
-
-### 🚀 Bottom Line
-
-You now have a true enterprise forecasting engine that:
-
-- **Scales to 10,000+ SKUs**
-- **Runs in under 30 minutes**
-- **Delivers significantly lower MAPE** (expect 8–14% median)
-- **Is robust, logged, and auditable**
-- **Is ready for promotion features** (just turn on the columns!)
-
-### v1.0 → v2.0 Upgrade Summary
-
-| Feature | Old v1.0 | New v2.0 | Impact |
-|---------|----------|----------|--------|
-| **Speed & Scalability** | Single-threaded loop → hours | joblib.Parallel + all cores → 10–20x faster | Critical |
-| **Holiday Handling** | 2 hard-coded dates | Full 2018–2026 calendar with windows | +5–15% accuracy |
-| **External Regressors** | None | Ready for promo/price/weather | +10–25% accuracy |
-| **Seasonality Mode** | Default (additive) | multiplicative (better for growing SKUs) | Significant |
-| **Outlier Handling** | Hard clip at 99th | Softer cap + preserves spikes | Prevents signal loss |
-| **Error Resilience** | Crashes on one bad SKU | Try/except + continues | Production safe |
-| **Logging** | print() | Proper logging to file + console | Ops-ready |
-| **Model Versioning** | None | run_id + timestamp | Auditability |
-| **Cross-Validation Ready** | Only last 30 days | Framework for full CV (commented) | Future-proof |
-| **Output Structure** | Basic | Cleaner, versioned, metadata-rich | BI & monitoring ready |
+| Metric | Value | Interpretation |
+|--------|-------|----------------|
+| Median MAPE | 12.3% | Point forecasts are ~88% accurate on average |
+| Coverage | ~80% | 80% of actuals fall within prediction intervals |
+| Bias | ~0 | Forecasts are neither systematically high nor low |
 
 ---
 
 ## 🖼️ Dashboard Previews
 
-### 1. Executive KPI View
+### Executive KPI View
 ![KPI Dashboard](KPIDashboard.png)
 *At-a-glance metrics: Total revenue, YoY growth by SKU, top/bottom performers, and product lifecycle analysis*
 
-### 2. Forecast vs. Actuals Overlay
+### Forecast vs. Actuals Overlay
 ![Forecasting Dashboard](ForecastingDash.png)
 *90-day forecasts with uncertainty intervals (80% prediction bands), overlaid with historical actuals for validation*
 
-### 3. Database Schema
-![Schema](database.png)
-*Data model: Raw data → Staging (dbt) → Mart (dbt) → Forecasts (Prophet) → Dashboard*
-
 ---
 
-## 🚀 Quick Start (Fresh Machine Setup)
+## ⚡ Quick Start (10 minutes)
 
-**Prerequisites:** Python 3.9+, Docker, Git
-
-```bash
-# 1. Clone repository
+```powershell
+# 1. Clone & setup
 git clone https://github.com/stalcup-dev/end-to-end-sales-forecasting-kpi-dashboard-etl.git
 cd end-to-end-sales-forecasting-kpi-dashboard-etl
-
-# 2. Set up Python environment
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+python -m venv .venv; .venv\Scripts\activate        # Windows
 pip install -r requirements.txt
-pip install -r requirements-dev.txt
 
-# 3. Configure database (copy and edit with your credentials)
-cp .env.example .env
-# Edit .env if needed (defaults work with Docker)
-
-# 4. Start PostgreSQL with Docker
+# 2. Start Postgres (requires Docker)
 docker compose up -d
 
-# 5. Initialize database and load sample data
+# 3. Bootstrap database + seed data
+cp .env.example .env   # Edit credentials if needed
 python scripts/bootstrap.py
 
-# 6. Run complete pipeline (ETL → forecast → metrics → report)
-python -m vitamarkets.pipeline --run-all
+# 4. Run full pipeline (dbt → Prophet → metrics → report)
+python forecast_prophet_v2.py
 ```
 
-**Expected outputs:**
-- ✅ Database tables: `mart_sales_summary`, `simple_prophet_forecast`, `forecast_error_metrics`
-- ✅ Evaluation report: `reports/forecast_eval.md`
-- ✅ CSV exports: `prophet_forecasts/*.csv`
-- ✅ Dashboard: Open `MainDash.pbix` in Power BI Desktop and refresh
-
-**Total time:** ~5 minutes
-
-📖 **Detailed guide:** See [docs/SETUP.md](docs/SETUP.md)
+**Verify it worked:** see [Verification Checklist](#-verification-checklist) below.
 
 ---
 
-## 📋 Repo Contract (What This Pipeline Produces)
+## 🏗️ Architecture
 
-### Database Tables
-- `vitamarkets_raw` - Raw sales transactions (50k+ rows, 19 columns)
-- `mart_sales_summary` - Daily aggregated sales by SKU/channel/segment
-- `simple_prophet_forecast` - 90-day forecasts with uncertainty intervals
-- `forecast_error_metrics` - Per-SKU accuracy metrics (MAE, MAPE, RMSE, bias, coverage)
-
-### Files
-- `reports/forecast_eval.md` - Markdown report with metrics summary and quality assessment
-- `prophet_forecasts/simple_prophet_forecast.csv` - Forecast data for Power BI
-- `prophet_forecasts/forecast_error_metrics.csv` - Metrics for analysis
-- `logs/run_daily.log` - Pipeline execution logs (not tracked in git)
-
-### Power BI Dashboard
-- `MainDash.pbix` - Executive KPIs + Forecast vs. Actuals visualizations
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  vitamarkets_ultrarealistic_sampledataset.csv (50k rows, 4 years)          │
+└─────────────────────────────────┬───────────────────────────────────────────┘
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PostgreSQL   public.vitamarkets_raw                                        │
+└─────────────────────────────────┬───────────────────────────────────────────┘
+                                  ▼  dbt run
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  dbt Models   stg_vitamarkets (view) → mart_sales_summary (table)           │
+└─────────────────────────────────┬───────────────────────────────────────────┘
+                                  ▼  forecast_prophet_v2.py
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Prophet      prophet_forecasts_YYYYMMDD_HHMM (versioned table)             │
+│  Forecasts    prophet_forecast_metrics_YYYYMMDD_HHMM (versioned table)      │
+│               ↓ stable views                                                │
+│               simple_prophet_forecast, forecast_error_metrics               │
+└─────────────────────────────────┬───────────────────────────────────────────┘
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Power BI     MainDash.pbix (Executive KPIs + Forecast vs. Actuals)         │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 🛠️ Tech Stack
+## 🎓 Skills Demonstrated
 
-**Data Pipeline:**
-- Python 3.11 (pandas, SQLAlchemy, Prophet, scikit-learn)
-- PostgreSQL 14 (transactional data store)
-- dbt 1.7 (SQL transformations & data modeling)
-- Docker Compose (containerized database)
+### SQL & Data Modeling
+- ✅ Complex aggregations (GROUP BY, window functions, CTEs)
+- ✅ dbt model lineage with `ref()` macro
+- ✅ Star schema design (normalized staging, denormalized marts)
+- ✅ Data quality checks (null handling, outlier clipping)
+- ✅ Schema tests (unique, not_null, relationships, accepted_values)
 
-**Forecasting:**
-- Prophet 1.1.5 (time series forecasting with seasonality)
-- cmdstanpy (Bayesian inference backend)
+### Statistical Forecasting & Analysis
+- ✅ Time series analysis with Facebook Prophet
+- ✅ Seasonality detection (weekly, yearly patterns)
+- ✅ Outlier handling (99th percentile clipping)
+- ✅ Prediction intervals (80% confidence bands)
+- ✅ Rigorous model evaluation (train/test split)
+- ✅ 5 accuracy metrics: MAE, RMSE, MAPE, bias, coverage
 
-**Visualization:**
-- Power BI Desktop (dashboards)
+### Data Visualization & Business Intelligence
+- ✅ Executive KPI dashboard design
+- ✅ Forecast vs. actuals visualization with uncertainty bands
+- ✅ DAX measures for aggregations
+- ✅ Slicers and filters for self-service analytics
+- ✅ Business storytelling (insights → actions)
 
-**Quality & Testing:**
-- pytest (unit & integration tests)
-- dbt schema tests (data validation)
-- ruff (fast Python linter)
-- black (code formatter)
-- pre-commit (git hooks)
-- GitHub Actions (CI/CD)
+### Data Engineering & ETL
+- ✅ ETL pipeline design (CSV → Postgres → dbt → Prophet)
+- ✅ Database design with PostgreSQL
+- ✅ Connection management (SQLAlchemy + psycopg2)
+- ✅ Error handling and logging
+- ✅ Docker containerization
+- ✅ Idempotent data loading
 
-**DevOps:**
-- Docker & Docker Compose
-- Python logging (execution monitoring)
-- Environment management (.env, virtualenv)
+### Software Engineering Best Practices
+- ✅ Unit testing (pytest with 34+ tests)
+- ✅ Code quality (ruff linting, black formatting)
+- ✅ CI/CD pipeline (GitHub Actions)
+- ✅ Version control (Git best practices)
+- ✅ Documentation (50+ pages)
+
+---
+
+## 📊 Power BI Data Contract
+
+> **⚠️ CRITICAL:** Power BI must query **views**, not versioned tables. See [docs/DATA_CONTRACT.md](docs/DATA_CONTRACT.md) for full schema.
+
+| View | Purpose |
+|------|---------|
+| `public.simple_prophet_forecast` | Daily forecasts + actuals (columns: `ds`, `yhat`, `yhat_lower`, `yhat_upper`) |
+| `public.forecast_error_metrics` | Per-SKU accuracy (columns: `test_mae`, `test_mape_pct`, `test_coverage_pct`, etc.) |
+
+### ⚠️ Metrics Aggregation Warning
+
+| ❌ WRONG | ✅ CORRECT |
+|----------|-----------|
+| `SUM(test_mae)` | `AVERAGE(test_mae)` |
+| `SUM(test_mape_pct)` | `AVERAGE(test_mape_pct)` |
+
+**Error metrics must use AVERAGE (or median), never SUM.** Summing errors produces meaningless inflated values.
+
+---
+
+## ✅ Verification Checklist
+
+Run after pipeline completes to confirm everything worked:
+
+```sql
+-- 1. Forecast data exists with recent run
+SELECT COUNT(*) AS rows, MAX(ds) AS max_date, MAX(forecast_run_id) AS run
+FROM public.simple_prophet_forecast;
+-- Expected: rows > 20000, max_date ~ today + 90 days
+
+-- 2. Metrics exist for all SKUs
+SELECT COUNT(*) AS sku_count, ROUND(AVG(test_mape_pct)::numeric, 1) AS avg_mape
+FROM public.forecast_error_metrics;
+-- Expected: sku_count = 8, avg_mape < 30
+
+-- 3. Views have expected columns
+SELECT column_name FROM information_schema.columns
+WHERE table_name = 'simple_prophet_forecast' AND table_schema = 'public'
+ORDER BY ordinal_position;
+-- Expected: ds, sku, yhat, yhat_lower, yhat_upper, data_type, forecast_run_id
+```
 
 ---
 
@@ -186,398 +209,73 @@ python -m vitamarkets.pipeline --run-all
 
 ```
 .
-├── setup/
-│   └── init_db.sql              # Legacy: Database init (superseded by sql/init.sql)
-├── sql/
-│   └── init.sql                 # Database schema creation (used by bootstrap.py)
+├── forecast_prophet_v2.py       # Main forecasting pipeline (recommended)
 ├── scripts/
-│   ├── bootstrap.py             # NEW: Idempotent DB setup & data loader
-│   └── run_daily.py             # Legacy orchestration (use vitamarkets/pipeline.py)
-├── vitamarkets/                 # NEW: Python package for unified pipeline
-│   ├── __init__.py
-│   └── pipeline.py              # Single-command CLI: --run-all, --forecast, --report
-├── etl/
-│   ├── refresh_actuals.py       # Load CSV to Postgres
-│   └── requirements.txt
-├── vitamarkets_dbt/
-│   └── vitamarkets/
-│       ├── models/
-│       │   ├── stg_vitamarkets.sql    # Staging layer (clean raw data)
-│       │   └── mart_sales_summary.sql # Mart layer (aggregated KPIs)
-│       └── dbt_project.yml
-├── tests/                       # NEW: pytest test suite
-│   ├── test_etl_schema.py       # Schema validation tests
-│   ├── test_forecast_eval.py    # Metrics calculation tests
-│   └── test_db_writes.py        # Database operation tests
-├── reports/
-│   └── README.md                # Report directory documentation
-├── docs/
-│   ├── ARCHITECTURE.md          # System design with Mermaid diagrams
-│   ├── DATA_DICTIONARY.md       # Table schemas & sample queries
-│   ├── KPI_DEFINITIONS.md       # Metric calculations & business logic
-│   ├── BUSINESS_DECISIONS.md    # Decision framework & stakeholder personas
-│   ├── DASHBOARD_GUIDE.md       # Power BI user guide
-│   └── SETUP.md                 # Detailed installation guide
-├── prophet_improved.py          # Forecast generation with train/test split
-├── db.py                        # Database connection helper
-├── checkcsv.py                  # Data quality validation
-├── docker-compose.yml           # NEW: PostgreSQL container setup
-├── .env.example                 # Environment variables template
-├── .pre-commit-config.yaml      # NEW: Pre-commit hooks (ruff, black)
-├── pyproject.toml               # NEW: Tool configuration (ruff, black, pytest)
-├── requirements.txt             # Python runtime dependencies
-├── requirements-dev.txt         # NEW: Development dependencies (pytest, ruff, black)
+│   ├── bootstrap.py             # Idempotent DB setup + data loader
+│   └── run_daily.py             # Legacy orchestration
+├── vitamarkets_dbt/vitamarkets/
+│   └── models/
+│       ├── stg_vitamarkets.sql  # Staging (clean raw data)
+│       └── mart_sales_summary.sql # Mart (daily aggregates)
+├── tests/                       # pytest suite (34+ tests)
+├── docs/                        # Comprehensive documentation
 ├── MainDash.pbix                # Power BI dashboard
-├── KPIDashboard.png             # Screenshot: Executive KPIs
-├── ForecastingDash.png          # Screenshot: Forecast vs. Actuals
-├── database.png                 # Screenshot: Database schema
-├── HIRING_MANAGER_REVIEW.md     # 36-page portfolio assessment
-├── IMPROVEMENTS_SUMMARY.md      # Before/after comparison & ROI
-├── 14_DAY_PLAN.md               # Daily upgrade checklist
-├── SPRINT_SUMMARY.md            # Repo upgrade sprint documentation
-├── LICENSE                      # MIT License
-└── README.md                    # You are here
+└── docker-compose.yml           # PostgreSQL container
 ```
-
----
-
-## 📊 Power BI Connection Contract
-
-**IMPORTANT:** Power BI must query the compatibility views below (they always point to the latest run). Do **not** hit versioned tables directly. Canonical schema is documented in `docs/data_contract.md` and enforced by `sql/contracts.sql`.
-
-### Canonical Objects for Power BI
-
-| Object | Purpose | Refresh Behavior |
-|--------|---------|------------------|
-| `public.simple_prophet_forecast` | Forecast data (actuals + predictions) with legacy column names | Auto-updates every pipeline run via CREATE OR REPLACE VIEW |
-| `public.forecast_error_metrics` | Per-SKU accuracy metrics (legacy schema) | Auto-updates every pipeline run |
-| `public.v_forecast_daily_latest` | Stable “latest” forecast view (modern column names) | Auto-updates every pipeline run |
-| `public.v_forecast_sku_metrics_latest` | Stable “latest” metrics view (modern column names) | Auto-updates every pipeline run |
-
-### Power Query pattern (avoids Navigation drift)
-
-Use `Value.NativeQuery` so Power BI is pinned to the view name, not navigation metadata:
-
-```m
-let
-   Source = PostgreSQL.Database("localhost", "vitamarkets"),
-   Forecast = Value.NativeQuery(Source, "select * from public.simple_prophet_forecast", null, [EnableFolding=true]),
-   Metrics = Value.NativeQuery(Source, "select * from public.forecast_error_metrics", null, [EnableFolding=true])
-in
-   Forecast
-```
-
-### Debug: what Power BI is pointed at
-- In **Power Query → Advanced Editor**, confirm `Schema = "public"` and `Item = "simple_prophet_forecast"` (or `forecast_error_metrics`).
-- In **Applied Steps**, the `Navigation` step should reference the exact view name; if not, replace it with the `Value.NativeQuery` pattern above.
-
-### Connection Setup (Power BI Desktop)
-
-1. **Get Data** → **PostgreSQL Database**
-2. **Server:** `localhost:5432` (or your DB host)
-3. **Database:** `vitamarkets`
-4. **Mode:** DirectQuery or Import
-5. **Import these objects:**
-   - ✅ `public.simple_prophet_forecast`
-   - ✅ `public.forecast_error_metrics`
-   - (Optional) `public.mart_sales_summary` for actuals-only KPIs
-   - ❌ Do **NOT** query `prophet_forecasts_*` versioned tables
-
-### How to Verify a Refresh Happened
-
-Run these checks (pgAdmin / psql):
-
-```sql
-SELECT MAX(ds) AS max_date, MAX(forecast_run_id) AS max_run
-FROM public.simple_prophet_forecast;
-
-SELECT MAX(run_id) AS max_run
-FROM public.forecast_error_metrics;
-```
-
-### Visuals & DAX hygiene (no SUM of errors)
-
-Use averages (or medians) for error metrics and add slicers by `data_type`:
-
-```DAX
-MAE Avg = AVERAGE(forecast_error_metrics[test_mae])
-MAPE Avg % = AVERAGE(forecast_error_metrics[test_mape_pct])
-RMSE Avg = AVERAGE(forecast_error_metrics[test_rmse])
-Bias Avg = AVERAGE(forecast_error_metrics[test_bias])
-Coverage Avg % = AVERAGE(forecast_error_metrics[test_coverage_pct])
-Max Forecast Date = MAX(simple_prophet_forecast[ds])
-Max Forecast Run = MAX(simple_prophet_forecast[forecast_run_id])
-```
-
-- Add a slicer on `simple_prophet_forecast[data_type]` to separate actuals vs forecasts.
-- Targets: coverage ≈ 80% for the 80% PI; bias near 0.
-- Refresh-proof cards: show `Max Forecast Date` and `Max Forecast Run` on the dashboard header.
-
-### Sample Queries
-
-**Forecast vs Actuals Chart:**
-```sql
-SELECT ds AS date,
-      sku,
-      yhat,
-      yhat_lower,
-      yhat_upper,
-      data_type
-FROM public.simple_prophet_forecast
-WHERE ds >= CURRENT_DATE - INTERVAL '180 days'
-ORDER BY sku, ds;
-```
-
-**Top 10 Most Accurate SKUs:**
-```sql
-SELECT sku,
-      test_mape_pct AS mape_pct,
-      test_mae,
-      test_rmse,
-      test_coverage_pct AS coverage
-FROM public.forecast_error_metrics
-ORDER BY test_mape_pct ASC
-LIMIT 10;
-```
-
-See `docs/data_contract.md` for the explicit schema and `sql/contracts.sql` for a rebuild script that repoints views to the latest run.
-
-### ✅ How to validate end-to-end
-
-1. Run the pipeline: `python -m vitamarkets.pipeline --run-all` (or `python forecast_prophet_v2.py`).
-2. Rebuild contract views (optional if pipeline already ran): `psql -f sql/contracts.sql`.
-3. Verify objects + columns: `psql -f scripts/verify_powerbi_contract.sql` (fails if columns missing; shows max ds/run).
-4. Open Power BI Desktop and refresh; Advanced Editor should show `Item = "simple_prophet_forecast"` / `forecast_error_metrics` via `Value.NativeQuery`.
-5. Confirm visuals use averages (not sums) for MAE/MAPE/RMSE/bias/coverage, slicer on `data_type`, and cards for `Max Forecast Date` + `Max Forecast Run` updated.
-
----
-
-## 🚧 Future Improvements / Roadmap
-
-- Fix Power BI aggregations: show MAE/MAPE/RMSE/bias/coverage as AVERAGE (or median/weighted), never SUM, to avoid inflating errors in visuals.
-- Weighted rollups: add volume-weighted MAPE (weight by actual units if present; else fallback to n_obs) and provide median MAPE across SKUs for robustness.
-- Interval calibration: compare `prediction_interval_coverage_pct` to the 80% target; widen intervals when coverage < 80% or tighten when consistently > 90%.
-- Promo/price regressors: incorporate `promo_flag` rigorously (and price/temperature when available) with backtests to quantify lift vs. baseline.
-- Rolling backtests: schedule weekly rolling backtests (e.g., expanding/rolling windows) to monitor drift and catch degradation early.
-- Holiday tuning: refine holiday windows by SKU category and add movable holidays (Easter/Thanksgiving exact dates) for better seasonality fit.
-- Hierarchical/reconciliation: explore bottom-up or MinT reconciliation across channel/country to ensure coherent aggregates.
-- Baselines & benchmarks: add seasonal-naive and Prophet-without-regressors benchmarks for honest model comparison.
-- Interval targets by SKU: set SKU-level coverage targets (e.g., higher for high-revenue SKUs) and alert when breached.
-- Deployment hygiene: add automated view validation + volume checks in CI to block deploys when contracts break.
-
----
-
-## 📌 Category-by-Category Plan (what to do and why)
-
-1) **Classic Seasonal** — Strong seasonality, mild trend; keep Prophet yearly+weekly; holidays on; consider weekly aggregation if daily noise is high. Success: lower MAPE and coverage near target.
-2) **Flagship Growth** — Trend dominates; allow flexible changepoints, consider cap/floor if saturation; run rolling backtests to avoid lucky splits. Success: bias ~0, MAE trending down.
-3) **Promo Dependent** — Spikes driven by promos; add regressors (`promo_flag`, ideally discount depth/ad spend/email). Evaluate promo vs non-promo separately. Success: lower RMSE on spikes, better coverage.
-4) **Viral Spike** — Rare surges; aim for early detection + honest uncertainty. Baseline normal demand, add anomaly/alert layer, widen intervals. Success: coverage near target; not chasing low MAPE.
-5) **Supply Disrupted** — Sales constrained by stock; separate demand vs availability. If stockout flags exist, exclude/adjust OOS days; at minimum cap zero-runs. Success: reduce negative bias and stabilize.
-6) **Discontinued** — Demand goes to zero; rule-based forecast to 0 after discontinue date (or simple decay). Success: prevent phantom demand.
-7) **Cannibalized** — Demand shifts to other SKUs; short-term treat as structural break (recent window), better with related-SKU regressors/category modeling. Success: reduce post-break bias.
-8) **Slow Decliner** — Gentle downtrend; prefer stable simple models (rolling avg/ETS/Prophet with constrained trend). Success: low bias + decent MAE.
-
-### Minimum “real improvement” (high leverage, low scope)
-- Add regressors for **Promo Dependent**: `promo_flag` at minimum; discount depth/ad spend when available.
-- Handle **Discontinued** with a rule: hard-stop forecasts at 0 after discontinue date.
-- Fix evaluation: **rolling-origin backtest** (3–5 cutoffs) and use median performance.
-
-### Dashboard alignment
-- Stop showing **Sum of MAE**; use **Average/median** for MAE/MAPE/RMSE/bias/coverage.
-- Add slicer by `data_type` (actual vs forecast).
-- Show targets per type (e.g., coverage target 80%, bias near 0).
 
 ---
 
 ## 📖 Documentation
 
-- **[Data Contract](docs/data_contract.md)** - Authoritative schemas for Power BI views
+| Document | Description |
+|----------|-------------|
+| **[SETUP.md](docs/SETUP.md)** | Full installation & environment setup |
+| **[DATA_CONTRACT.md](docs/DATA_CONTRACT.md)** | View schemas, column definitions, Power BI integration |
+| **[FORECASTING_POLICIES.md](docs/FORECASTING_POLICIES.md)** | SKU eligibility, outlier handling, metric targets |
+| **[DASHBOARD_GUIDE.md](docs/DASHBOARD_GUIDE.md)** | Power BI usage, DAX formulas, metric interpretation |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, Mermaid diagrams |
+| [DATA_DICTIONARY.md](docs/DATA_DICTIONARY.md) | All table schemas with sample queries |
+| [KPI_DEFINITIONS.md](docs/KPI_DEFINITIONS.md) | Metric calculations & business logic |
+| [ROADMAP.md](docs/ROADMAP.md) | Planned improvements, known limitations |
 
 ---
 
-## 🔄 Running the Pipeline
+## 🛠️ Tech Stack
 
-### Option 1: Single-Command Pipeline (Recommended)
-
-```bash
-python -m vitamarkets.pipeline --run-all
-```
-
-This unified CLI command:
-1. Runs dbt transformations (staging → mart)
-2. Generates Prophet forecasts with train/test evaluation
-3. Computes accuracy metrics (MAE, MAPE, RMSE, bias, coverage)
-4. Writes results to database tables
-5. Generates `reports/forecast_eval.md` evaluation report
-6. Exports CSV files to `prophet_forecasts/`
-
-**Other commands:**
-```bash
-python -m vitamarkets.pipeline --forecast  # Run forecasting only
-python -m vitamarkets.pipeline --metrics   # Compute metrics only
-python -m vitamarkets.pipeline --report    # Generate report only
-```
-
-### Option 2: Legacy Orchestration Script
-
-```bash
-python scripts/run_daily.py
-```
-
-This orchestrates:
-1. dbt transformations (staging → mart)
-2. Forecast generation (Prophet)
-3. Data quality checks
-4. Logging to `logs/run_daily.log`
-
-**Note:** Option 1 (`vitamarkets/pipeline.py`) is the newer, more comprehensive approach with better evaluation and reporting. Option 2 is maintained for backwards compatibility.
-
-### Step-by-Step Execution (Manual)
-
-```bash
-# 1. Run dbt models
-cd vitamarkets_dbt/vitamarkets && dbt run && cd ../..
-
-# 2. Generate forecasts
-python prophet_improved.py
-
-# 3. Validate outputs
-python checkcsv.py
-```
+- **Python 3.11** — pandas, SQLAlchemy, Prophet, scikit-learn, joblib
+- **PostgreSQL 14** — transactional database (Docker Compose)
+- **dbt 1.7** — SQL transformations & schema tests
+- **Prophet 1.1.5** — time series forecasting with seasonality
+- **Power BI Desktop** — dashboards
+- **pytest + ruff + GitHub Actions** — testing & CI/CD
 
 ---
 
-## 📊 Data Model
+## 🚀 v1 → v2 Upgrade Highlights
 
-**Pipeline Flow:**
-```
-vitamarkets_ultrarealistic_sampledataset.csv (50k+ rows, 4 years of data)
-          ↓
-[psql \COPY] → public.vitamarkets_raw
-          ↓
-[dbt run] → public.stg_vitamarkets (view: clean & type-cast)
-          ↓
-[dbt run] → public.mart_sales_summary (table: daily aggregates by SKU/channel/segment)
-          ↓
-[prophet_improved.py] → public.simple_prophet_forecast (90-day forecasts + actuals)
-                      → public.forecast_error_metrics (MAE per SKU)
-          ↓
-[Power BI] → MainDash.pbix (Executive KPIs + Forecast vs. Actuals)
-```
-
-**Key Tables:**
-- `vitamarkets_raw` - Raw transaction data (19 columns)
-- `mart_sales_summary` - Aggregated daily sales by SKU (12 columns)
-- `simple_prophet_forecast` - Forecasts with 80% prediction intervals
-- `forecast_error_metrics` - Accuracy tracking (MAE per SKU)
-
-See [Data Dictionary](docs/DATA_DICTIONARY.md) for full schemas.
-
----
-
-## 🎓 Skills Demonstrated
-
-### Data Engineering
-- ✅ ETL pipeline design (CSV → Postgres → dbt → Prophet)
-- ✅ Database design (star schema with facts and dimensions)
-- ✅ Incremental data processing (dbt models)
-- ✅ Connection management (SQLAlchemy + psycopg2)
-- ✅ Error handling and logging
-- ✅ Docker containerization (PostgreSQL)
-- ✅ Idempotent data loading (bootstrap script)
-
-### SQL & Data Modeling
-- ✅ Complex aggregations (GROUP BY, window functions)
-- ✅ dbt model lineage (`ref()` macro)
-- ✅ Schema design (normalized staging, denormalized marts)
-- ✅ Data quality checks (null handling, outlier clipping)
-- ✅ Schema tests (unique, not_null, relationships, accepted_values)
-
-### Statistical Forecasting
-- ✅ Time series analysis (Prophet)
-- ✅ Seasonality detection (weekly, yearly)
-- ✅ Outlier handling (99th percentile clipping)
-- ✅ Prediction intervals (80% confidence bands)
-- ✅ Rigorous model evaluation (train/test split, MAPE, MAE, RMSE, bias, coverage)
-- ✅ Baseline comparison (naive forecasting)
-
-### Business Analytics
-- ✅ KPI definition and calculation
-- ✅ Dashboard design (executive vs. operational views)
-- ✅ Business storytelling (insights → actions)
-- ✅ Stakeholder communication
-
-### Software Engineering & Testing
-- ✅ Unit testing (pytest with 34 comprehensive tests)
-- ✅ Integration testing (dbt schema tests)
-- ✅ Code quality (ruff linting, black formatting)
-- ✅ Pre-commit hooks
-- ✅ CI/CD pipeline (GitHub Actions - all tests passing)
-- ✅ Package structure (vitamarkets module)
-- ✅ CLI design (argparse)
-
-### DevOps & Automation
-- ✅ Pipeline orchestration (unified CLI)
-- ✅ Environment management (virtualenv, .env files)
-- ✅ Docker containerization
-- ✅ Scheduled execution (cron-ready, Task Scheduler)
-- ✅ Version control (Git best practices)
-- ✅ Documentation (50+ pages)
-
----
-
-## 🚧 Future Enhancements
-
-**Completed Improvements (see [HIRING_MANAGER_REVIEW.md](HIRING_MANAGER_REVIEW.md)):**
-- ✅ Train/test split with rigorous forecast evaluation (MAPE%, RMSE, bias, coverage)
-- ✅ dbt schema tests (unique, not_null, relationships, accepted_values)
-- ✅ Comprehensive pytest suite for ETL, forecasting, and database operations
-- ✅ GitHub Actions CI/CD (lint + test jobs)
-- ✅ Docker Compose setup for reproducible PostgreSQL environment
-- ✅ Single-command pipeline with CLI (`python -m vitamarkets.pipeline --run-all`)
-- ✅ Code quality tools (ruff, black, pre-commit hooks)
-
-**Planned Enhancements:**
-1. Add Great Expectations for advanced data quality validation
-2. Implement MLflow for experiment tracking and model versioning
-3. Add more sophisticated baseline models (SARIMA, seasonal naive) for comparison
-4. Expand dashboards with profitability analysis and customer segmentation
-5. Add automated alerting for forecast accuracy degradation
-6. Implement incremental forecasting (only re-train changed SKUs)
-
----
-
-## 🤝 Contributing
-
-This is a portfolio project, but feedback is welcome! If you spot issues or have suggestions:
-1. Open an issue with details
-2. Fork the repo and submit a PR
-3. Reach out directly (contact below)
+| Aspect | v1 | v2 |
+|--------|----|----|
+| Evaluation | None | 30-day holdout → MAE, RMSE, MAPE, bias, coverage |
+| Parallel training | Sequential | `joblib` parallelism (~4x faster) |
+| Holiday handling | Prophet defaults | Explicit US holidays |
+| Pipeline | Scattered scripts | Unified `forecast_prophet_v2.py` |
+| Contract | None | Stable views + versioned tables |
+| CI | None | `ruff` lint + `pytest` on every push |
 
 ---
 
 ## 📧 Contact
 
-**Allen Stalcup** - allen.stalc@gmail.com | [LinkedIn](https://linkedin.com/in/yourprofile) | [GitHub](https://github.com/stalcup-dev)
+**Allen Stalcup** — [allen.stalc@gmail.com](mailto:allen.stalc@gmail.com) | [LinkedIn](https://linkedin.com/in/) | [GitHub](https://github.com/stalcup-dev)
 
-⭐ If you found this project helpful or interesting, please star this repo!
+⭐ Star this repo if you found it useful!
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
-## 🙏 Acknowledgments
-
-- **Prophet** by Facebook Research - Time series forecasting library
-- **dbt** by dbt Labs - Data transformation framework
-- **Sample Data** - Synthetically generated for demonstration purposes
-- **Inspired by** real-world DTC e-commerce analytics challenges
-
----
-
-**Note:** This is a portfolio project showcasing analytics engineering skills. The data is synthetic and any business insights are for demonstration purposes only.
+**Note:** This is a portfolio project showcasing analytics and data engineering skills. The data is synthetic and any business insights are for demonstration purposes only.

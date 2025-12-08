@@ -1,11 +1,46 @@
 # Dashboard User Guide
 
-## Overview
+> **Last Updated:** 2025-01-16
 
 The Vita Markets Power BI dashboard (`MainDash.pbix`) provides two primary views for different stakeholder needs:
 
 1. **Executive KPI View** - High-level business performance metrics
 2. **Forecasting Dashboard** - Operational planning with 90-day forecasts
+
+---
+
+## ⚠️ Critical: Metrics Aggregation
+
+**NEVER use SUM for error metrics. Always use AVERAGE.**
+
+| Metric | ❌ WRONG | ✅ CORRECT |
+|--------|----------|-----------|
+| MAE | `SUM(test_mae)` | `AVERAGE(test_mae)` |
+| MAPE | `SUM(test_mape_pct)` | `AVERAGE(test_mape_pct)` |
+| RMSE | `SUM(test_rmse)` | `AVERAGE(test_rmse)` |
+| Bias | `SUM(test_bias)` | `AVERAGE(test_bias)` |
+| Coverage | `SUM(test_coverage_pct)` | `AVERAGE(test_coverage_pct)` |
+
+**Why?** Summing errors across SKUs produces meaningless inflated values. If SKU A has MAE=10 and SKU B has MAE=20, showing "Sum = 30" doesn't represent any real measurement.
+
+### Required DAX Measures
+
+```dax
+MAE Avg = AVERAGE(forecast_error_metrics[test_mae])
+MAPE Avg % = AVERAGE(forecast_error_metrics[test_mape_pct])
+Coverage Avg % = AVERAGE(forecast_error_metrics[test_coverage_pct])
+Bias Avg = AVERAGE(forecast_error_metrics[test_bias])
+Max Forecast Date = MAX(simple_prophet_forecast[ds])
+Latest Run ID = MAX(simple_prophet_forecast[forecast_run_id])
+```
+
+### Dashboard Hygiene Checklist
+
+- [ ] Error metrics use AVERAGE (not SUM)
+- [ ] Slicer on `data_type` to filter actual vs forecast
+- [ ] Card showing `Max Forecast Date` to prove freshness
+- [ ] Card showing `Latest Run ID` for audit trail
+- [ ] Coverage target displayed (≈ 80% for 80% PI)
 
 ---
 
