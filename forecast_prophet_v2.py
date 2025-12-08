@@ -316,11 +316,11 @@ if forecast_dfs:
         conn.execute(text(f"DROP VIEW IF EXISTS public.{STABLE_VIEW_FORECASTS}"))
         conn.execute(text(f"DROP VIEW IF EXISTS public.{STABLE_VIEW_METRICS}"))
 
-        # View 1: Latest forecast data (stable)
+        # View 1: Latest forecast data (stable contract)
         conn.execute(text(f"""
-            CREATE VIEW public.{STABLE_VIEW_FORECASTS} AS
+            CREATE OR REPLACE VIEW public.{STABLE_VIEW_FORECASTS} AS
             SELECT 
-                ds AS forecast_date,
+                CAST(ds AS date) AS forecast_date,
                 sku,
                 yhat AS predicted_units,
                 yhat_lower AS lower_bound_80pct,
@@ -331,9 +331,9 @@ if forecast_dfs:
             ORDER BY sku, ds
         """))
 
-        # View 2: Latest metrics (stable)
+        # View 2: Latest metrics (stable contract)
         conn.execute(text(f"""
-            CREATE VIEW public.{STABLE_VIEW_METRICS} AS
+            CREATE OR REPLACE VIEW public.{STABLE_VIEW_METRICS} AS
             SELECT 
                 sku,
                 test_mae AS mean_absolute_error,
@@ -349,8 +349,8 @@ if forecast_dfs:
         """))
 
         # Compatibility view: legacy Power BI queries still hit simple_prophet_forecast
-        conn.execute(text(f"""
-            CREATE VIEW public.simple_prophet_forecast AS
+        conn.execute(text("""
+            CREATE OR REPLACE VIEW public.simple_prophet_forecast AS
             SELECT 
                 forecast_date AS ds,
                 sku,
@@ -359,12 +359,12 @@ if forecast_dfs:
                 upper_bound_80pct AS yhat_upper,
                 data_type,
                 forecast_run_id
-            FROM public.{STABLE_VIEW_FORECASTS}
+            FROM public.v_forecast_daily_latest
         """))
 
         # Compatibility view: legacy metrics table name
-        conn.execute(text(f"""
-            CREATE VIEW public.forecast_error_metrics AS
+        conn.execute(text("""
+            CREATE OR REPLACE VIEW public.forecast_error_metrics AS
             SELECT 
                 sku,
                 mean_absolute_error AS test_mae,
@@ -375,7 +375,7 @@ if forecast_dfs:
                 training_days AS n_train,
                 test_days AS n_test,
                 forecast_run_id AS run_id
-            FROM public.{STABLE_VIEW_METRICS}
+            FROM public.v_forecast_sku_metrics_latest
         """))
     
     log.info("   -> Stable and compatibility views updated successfully")

@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 from prophet import Prophet
 from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sqlalchemy import text
 
 # Add repo root to path
 ROOT = Path(__file__).parent.parent
@@ -91,6 +92,7 @@ def run_forecast():
     """
     df = pd.read_sql(query, engine)
     print(f"   → Loaded {len(df):,} rows")
+    print(f"   → Columns: {df.columns.tolist()}")
 
     # Clean & prep
     print("\n[2/5] Cleaning and preparing data...")
@@ -128,7 +130,7 @@ def run_forecast():
         sub["y"] = sub["y"].clip(upper=clip_val)
         return sub
 
-    df = df.groupby("sku", group_keys=False).apply(clip_outliers, include_groups=False)
+    df = df.groupby("sku", group_keys=False, sort=False).apply(clip_outliers, include_groups=True)
 
     # Train models and generate forecasts
     print("\n[5/5] Training Prophet models...")
@@ -173,6 +175,14 @@ def run_forecast():
 
     # Write to database
     print("\n✅ Writing forecasts to database...")
+    
+    # Drop views and old tables first (to_sql will error on views with if_exists="replace")
+    with engine.begin() as conn:
+        conn.execute(text("DROP VIEW IF EXISTS public.simple_prophet_forecast CASCADE"))
+        conn.execute(text("DROP VIEW IF EXISTS public.forecast_error_metrics CASCADE"))
+        conn.execute(text("DROP TABLE IF EXISTS public.simple_prophet_forecast CASCADE"))
+        conn.execute(text("DROP TABLE IF EXISTS public.forecast_error_metrics CASCADE"))
+    
     result.to_sql(
         "simple_prophet_forecast", engine, schema="public", if_exists="replace", index=False
     )
