@@ -30,5 +30,15 @@ def test_simple_prophet_forecast_columns(pg_engine):
 
 
 def test_forecast_error_metrics_columns(pg_engine):
-    required = {"sku", "test_mae", "test_rmse", "test_mape_pct", "test_bias", "test_coverage_pct", "n_train", "n_test", "run_id"}
+    required = {
+        "sku",
+        "test_mae",
+        "test_rmse",
+        "test_mape_pct",
+        "test_bias",
+        "test_coverage_pct",
+        "n_train",
+        "n_test",
+        "run_id",
+    }
     _assert_columns(pg_engine, "public", "forecast_error_metrics", required)
