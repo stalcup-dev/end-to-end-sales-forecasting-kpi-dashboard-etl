@@ -25,14 +25,14 @@ A complete analytics workflow from raw data to executive dashboards:
 | **Statistical Analysis** | Time series forecasting with Prophet, train/test evaluation, 5 accuracy metrics |
 | **Data Visualization** | Executive dashboards in Power BI with KPIs, forecast vs. actuals, accuracy gauges |
 | **ETL/Data Pipelines** | Automated CSV → PostgreSQL → dbt → Prophet → Power BI pipeline |
-| **Business Storytelling** | Dashboards that answer "Which SKUs are growing?" and "How accurate are our forecasts?" |
+| **Business Impact** | Purchase recommendations with lead time + safety stock → actionable reorder quantities |
 | **Data Quality** | dbt schema tests, pytest suite (34+ tests), CI/CD with GitHub Actions |
 
 **Business Context:**  
-Vita Markets is a simulated Direct-to-Consumer vitamin/supplement retailer. The pipeline answers real commercial questions:
-- *Which SKUs should we invest in? (Growth vs. Decline)*
-- *How much inventory should we order? (90-day forecast)*
-- *Are our forecasts reliable? (Accuracy metrics)*
+Vita Markets is a simulated Direct-to-Consumer vitamin/supplement retailer. The pipeline delivers **actionable decisions**:
+- *Which SKUs should we invest in?* → YoY growth trends identify winners/losers
+- *How much should we order?* → **Purchase recommendations with exact quantities** based on forecast + lead time + service level
+- *Can we trust the forecast?* → MAPE ratings (HIGH/MEDIUM/LOW confidence) per SKU
 
 ---
 
@@ -43,7 +43,7 @@ Vita Markets is a simulated Direct-to-Consumer vitamin/supplement retailer. The 
 - **New Launch SKU** delivered **150% YoY growth**, fully offsetting revenue losses from discontinued products
 - **Flagship Growth** remains the top revenue driver with consistent **25% YoY growth**
 - **Automated pipeline** eliminates manual reporting (**4 hours/week → 0 hours**)
-- **Forecasting** enables proactive inventory management and reduces stockout risk
+- **Actionable purchase recommendations** with lead time, safety stock, and reorder quantities for each SKU
 
 ### Forecasting Performance
 
@@ -52,6 +52,23 @@ Vita Markets is a simulated Direct-to-Consumer vitamin/supplement retailer. The 
 | Median MAPE | 12.3% | Point forecasts are ~88% accurate on average |
 | Coverage | ~80% | 80% of actuals fall within prediction intervals |
 | Bias | ~0 | Forecasts are neither systematically high nor low |
+
+### Purchase Recommendations Output
+
+The pipeline generates **actionable purchase orders** based on:
+- **14-day lead time** demand forecast
+- **90% service level** safety stock (z=1.28)
+- **Current on-hand** inventory
+- **Forecast confidence** (MAPE-based quality rating)
+
+**Example Output:**
+```
+Flagship Growth  |  ⚠️ REORDER NOW
+  On Hand: 450 units
+  14-Day Demand: 520 units (MAPE: 11.2% - HIGH confidence)
+  Safety Stock: 95 units (90% service level)
+  → PURCHASE: 165 units
+```
 
 ---
 

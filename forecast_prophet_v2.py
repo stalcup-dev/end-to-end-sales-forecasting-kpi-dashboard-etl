@@ -45,6 +45,20 @@ USE_VERSIONED_TABLES = (
 STABLE_VIEW_FORECASTS = "v_forecast_daily_latest"
 STABLE_VIEW_METRICS = "v_forecast_sku_metrics_latest"
 
+# Purchase recommendation parameters
+SUPPLIER_LEAD_TIME_DAYS = 14  # Typical supplier lead time
+SERVICE_LEVEL_Z_SCORE = 1.28  # 90% service level (z-score)
+ON_HAND_INVENTORY = {  # Simulated current inventory by SKU
+    "Flagship Growth": 450,
+    "New Launch": 200,
+    "Classic Seasonal": 300,
+    "Slow Decliner": 150,
+    "Promo Dependent": 250,
+    "Supply Disrupted": 100,
+    "Viral Spike": 180,
+    "Cannibalized": 120,
+}
+
 # Logging setup
 logging.basicConfig(
     level=logging.INFO,
@@ -422,6 +436,70 @@ if forecast_dfs:
     log.info(f"\nFORECAST QUALITY: {quality}")
 
     log.info(f"\nResults saved in: {OUTPUT_DIR}")
+    
+    # ------------------- PURCHASE RECOMMENDATIONS -------------------
+    log.info("\n" + "=" * 70)
+    log.info("PURCHASE RECOMMENDATIONS — NEXT REORDER CYCLE")
+    log.info("=" * 70)
+    log.info(f"Lead Time: {SUPPLIER_LEAD_TIME_DAYS} days | Service Level: 90% (z={SERVICE_LEVEL_Z_SCORE})")
+    log.info("\n" + "-" * 70)
+    
+    # Calculate purchase recommendations for each SKU
+    recommendations = []
+    for sku in metrics_df["sku"].unique():
+        sku_forecasts = all_forecasts[
+            (all_forecasts["sku"] == sku) & (all_forecasts["data_type"] == "forecast")
+        ].copy()
+        
+        if len(sku_forecasts) == 0:
+            continue
+            
+        # Get next reorder cycle demand (lead time period)
+        reorder_cycle_demand = sku_forecasts.nsmallest(SUPPLIER_LEAD_TIME_DAYS, "ds")["yhat"].sum()
+        
+        # Calculate safety stock: z * std_dev * sqrt(lead_time)
+        forecast_std = sku_forecasts.nsmallest(30, "ds")["yhat"].std()
+        safety_stock = SERVICE_LEVEL_Z_SCORE * forecast_std * np.sqrt(SUPPLIER_LEAD_TIME_DAYS)
+        
+        # Current inventory (simulated)
+        current_inventory = ON_HAND_INVENTORY.get(sku, 0)
+        
+        # Reorder point = lead time demand + safety stock
+        reorder_point = reorder_cycle_demand + safety_stock
+        
+        # Purchase recommendation = max(0, reorder_point - current_inventory)
+        purchase_qty = max(0, reorder_point - current_inventory)
+        
+        # Get MAPE for this SKU
+        sku_mape = metrics_df[metrics_df["sku"] == sku]["test_mape_pct"].values[0]
+        
+        recommendations.append({
+            "sku": sku,
+            "current_inventory": int(current_inventory),
+            "forecast_demand_14d": int(reorder_cycle_demand),
+            "safety_stock": int(safety_stock),
+            "reorder_point": int(reorder_point),
+            "purchase_qty": int(purchase_qty),
+            "forecast_quality": "HIGH" if sku_mape < 15 else "MEDIUM" if sku_mape < 25 else "LOW",
+            "mape_pct": round(sku_mape, 1),
+        })
+    
+    # Sort by purchase quantity (highest first)
+    recommendations = sorted(recommendations, key=lambda x: x["purchase_qty"], reverse=True)
+    
+    # Print recommendations
+    for rec in recommendations:
+        status = "⚠️ REORDER NOW" if rec["purchase_qty"] > 0 else "✅ Stock OK"
+        log.info(f"\n{rec['sku']}  |  {status}")
+        log.info(f"  On Hand: {rec['current_inventory']} units")
+        log.info(f"  14-Day Demand: {rec['forecast_demand_14d']} units (MAPE: {rec['mape_pct']}% - {rec['forecast_quality']} confidence)")
+        log.info(f"  Safety Stock: {rec['safety_stock']} units (90% service level)")
+        log.info(f"  → PURCHASE: {rec['purchase_qty']} units")
+    
+    # Save recommendations to CSV
+    recommendations_df = pd.DataFrame(recommendations)
+    recommendations_df.to_csv(os.path.join(OUTPUT_DIR, "purchase_recommendations.csv"), index=False)
+    log.info(f"\n📊 Purchase recommendations saved: {OUTPUT_DIR}/purchase_recommendations.csv")
     log.info("Next: Refresh Power BI -> Check 'Forecast vs Actuals' dashboard")
 
     # Print Power BI connection contract
