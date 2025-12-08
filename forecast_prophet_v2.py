@@ -25,7 +25,7 @@ from sqlalchemy import text
 
 # Force UTF-8 output on Windows to prevent UnicodeEncodeError
 if sys.platform == "win32":
-    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stdout.reconfigure(encoding="utf-8")
 
 warnings.filterwarnings("ignore")
 
@@ -33,30 +33,32 @@ from db import get_engine  # noqa: E402
 
 # ------------------- CONFIG -------------------
 FORECAST_DAYS = 90
-TEST_DAYS_CV = 30          # For final holdout
+TEST_DAYS_CV = 30  # For final holdout
 RUN_ID = datetime.now().strftime("%Y%m%d_%H%M")
 OUTPUT_DIR = f"prophet_forecasts_{RUN_ID}"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Table naming strategy
-USE_VERSIONED_TABLES = True  # If True: prophet_forecasts_20251207_1915; If False: simple_prophet_forecast
+USE_VERSIONED_TABLES = (
+    True  # If True: prophet_forecasts_20251207_1915; If False: simple_prophet_forecast
+)
 STABLE_VIEW_FORECASTS = "v_forecast_daily_latest"
 STABLE_VIEW_METRICS = "v_forecast_sku_metrics_latest"
 
 # Logging setup
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s | %(levelname)s | %(message)s',
+    format="%(asctime)s | %(levelname)s | %(message)s",
     handlers=[
         logging.FileHandler(os.path.join(OUTPUT_DIR, "forecast_run.log")),
-        logging.StreamHandler()
-    ]
+        logging.StreamHandler(),
+    ],
 )
 log = logging.getLogger()
 
-log.info("="*70)
+log.info("=" * 70)
 log.info("VITA MARKETS FORECASTING PIPELINE v2.0")
-log.info("="*70)
+log.info("=" * 70)
 
 # ------------------- DB CONNECTION -------------------
 engine = get_engine()
@@ -79,8 +81,8 @@ log.info(f"   -> Loaded {len(df_raw):,} rows across {df_raw['sku'].nunique()} SK
 # ------------------- 2. PREPROCESSING -------------------
 log.info("[2/7] Cleaning & preparing data...")
 df = df_raw.copy()
-df = df[df['y'] >= 0].dropna(subset=['y', 'ds'])
-df['ds'] = pd.to_datetime(df['ds'])
+df = df[df["y"] >= 0].dropna(subset=["y", "ds"])
+df["ds"] = pd.to_datetime(df["ds"])
 
 log.info(f"   -> {len(df):,} rows after cleaning")
 
@@ -92,16 +94,16 @@ sku_stats = (
         first_date=("ds", "min"),
         last_date=("ds", "max"),
         total_units=("y", "sum"),
-        n_days=("ds", "nunique")
+        n_days=("ds", "nunique"),
     )
     .reset_index()
 )
 sku_stats["span_days"] = (sku_stats["last_date"] - sku_stats["first_date"]).dt.days
 
 eligible_skus = sku_stats[
-    (sku_stats["span_days"] >= 730) &
-    (sku_stats["total_units"] > 500) &
-    (sku_stats["n_days"] >= 700)
+    (sku_stats["span_days"] >= 730)
+    & (sku_stats["total_units"] > 500)
+    & (sku_stats["n_days"] >= 700)
 ]["sku"].tolist()
 
 log.info(f"   -> {len(eligible_skus)} SKUs eligible out of {sku_stats['sku'].nunique()} total")
@@ -122,38 +124,41 @@ for name, date_str, window in holiday_events:
     for year in range(2018, 2027):
         try:
             date = pd.to_datetime(f"{year}-{date_str}")
-            holidays_list.append({
-                'holiday': name,
-                'ds': date,
-                'lower_window': -window,
-                'upper_window': window,
-            })
+            holidays_list.append(
+                {
+                    "holiday": name,
+                    "ds": date,
+                    "lower_window": -window,
+                    "upper_window": window,
+                }
+            )
         except Exception:
             continue
 
 holidays_df = pd.DataFrame(holidays_list)
 log.info(f"   -> {len(holidays_df)} holiday occurrences added")
 
+
 # ------------------- 5. PARALLEL FORECASTING FUNCTION -------------------
 def forecast_sku(sku_id):
     """Forecast a single SKU with error handling."""
     try:
-        sub = df[df['sku'] == sku_id].sort_values('ds').reset_index(drop=True)
+        sub = df[df["sku"] == sku_id].sort_values("ds").reset_index(drop=True)
         if len(sub) < 365:
             return None, f"Insufficient data for {sku_id}"
 
         # Clip extreme outliers (99th percentile)
-        q99 = sub['y'].quantile(0.99)
+        q99 = sub["y"].quantile(0.99)
         sub = sub.copy()
-        sub['y'] = sub['y'].clip(upper=q99 * 1.2)
+        sub["y"] = sub["y"].clip(upper=q99 * 1.2)
 
         # Check for regressor availability
-        has_promo = 'is_promo' in sub.columns and sub['is_promo'].nunique() > 1
+        has_promo = "is_promo" in sub.columns and sub["is_promo"].nunique() > 1
 
         # Final holdout evaluation (last 30 days)
-        cutoff = sub['ds'].max() - pd.Timedelta(days=TEST_DAYS_CV)
-        train_cv = sub[sub['ds'] <= cutoff]
-        test_cv = sub[sub['ds'] > cutoff]
+        cutoff = sub["ds"].max() - pd.Timedelta(days=TEST_DAYS_CV)
+        train_cv = sub[sub["ds"] <= cutoff]
+        test_cv = sub[sub["ds"] > cutoff]
 
         if len(test_cv) < 10:
             return None, f"Insufficient test data ({len(test_cv)} days) for {sku_id}"
@@ -164,29 +169,27 @@ def forecast_sku(sku_id):
             weekly_seasonality=True,
             daily_seasonality=False,
             holidays=holidays_df,
-            seasonality_mode='multiplicative',
+            seasonality_mode="multiplicative",
             interval_width=0.80,
             changepoint_prior_scale=0.05,
             seasonality_prior_scale=10.0,
         )
 
         if has_promo:
-            m.add_regressor('is_promo', standardize=False)
+            m.add_regressor("is_promo", standardize=False)
 
-        m.fit(train_cv[['ds', 'y'] + (['is_promo'] if has_promo else [])])
+        m.fit(train_cv[["ds", "y"] + (["is_promo"] if has_promo else [])])
 
         # Test set prediction
-        future_test = test_cv[['ds']].copy()
+        future_test = test_cv[["ds"]].copy()
         if has_promo:
-            future_test = future_test.merge(
-                sub[['ds', 'is_promo']], on='ds', how='left'
-            )
+            future_test = future_test.merge(sub[["ds", "is_promo"]], on="ds", how="left")
         forecast_test = m.predict(future_test)
 
-        y_true = test_cv['y'].values
-        y_pred = forecast_test['yhat'].values
-        lower = forecast_test['yhat_lower'].values
-        upper = forecast_test['yhat_upper'].values
+        y_true = test_cv["y"].values
+        y_pred = forecast_test["yhat"].values
+        lower = forecast_test["yhat_lower"].values
+        upper = forecast_test["yhat_upper"].values
 
         mae = mean_absolute_error(y_true, y_pred)
         rmse = np.sqrt(mean_squared_error(y_true, y_pred))
@@ -200,54 +203,54 @@ def forecast_sku(sku_id):
             weekly_seasonality=True,
             daily_seasonality=False,
             holidays=holidays_df,
-            seasonality_mode='multiplicative',
+            seasonality_mode="multiplicative",
             interval_width=0.80,
             changepoint_prior_scale=0.05,
             seasonality_prior_scale=10.0,
         )
 
         if has_promo:
-            m_full.add_regressor('is_promo', standardize=False)
+            m_full.add_regressor("is_promo", standardize=False)
 
-        m_full.fit(sub[['ds', 'y'] + (['is_promo'] if has_promo else [])])
+        m_full.fit(sub[["ds", "y"] + (["is_promo"] if has_promo else [])])
 
         future = m_full.make_future_dataframe(periods=FORECAST_DAYS)
         if has_promo:
             # Forward-fill promo flag
-            last_promo = sub['is_promo'].iloc[-1]
-            future = future.merge(
-                sub[['ds', 'is_promo']], on='ds', how='left'
-            )
-            future['is_promo'] = future['is_promo'].fillna(last_promo)
+            last_promo = sub["is_promo"].iloc[-1]
+            future = future.merge(sub[["ds", "is_promo"]], on="ds", how="left")
+            future["is_promo"] = future["is_promo"].fillna(last_promo)
 
         forecast_full = m_full.predict(future)
-        forecast_full['sku'] = sku_id
-        forecast_full['run_id'] = RUN_ID
+        forecast_full["sku"] = sku_id
+        forecast_full["run_id"] = RUN_ID
 
         metrics = {
-            'sku': sku_id,
-            'run_id': RUN_ID,
-            'n_train': len(train_cv),
-            'n_test': len(test_cv),
-            'test_mae': mae,
-            'test_rmse': rmse,
-            'test_mape_pct': mape,
-            'test_bias': bias,
-            'test_coverage_pct': coverage,
+            "sku": sku_id,
+            "run_id": RUN_ID,
+            "n_train": len(train_cv),
+            "n_test": len(test_cv),
+            "test_mae": mae,
+            "test_rmse": rmse,
+            "test_mape_pct": mape,
+            "test_bias": bias,
+            "test_coverage_pct": coverage,
         }
 
-        out_forecast = forecast_full[['ds', 'yhat', 'yhat_lower', 'yhat_upper', 'sku', 'run_id']].copy()
-        out_forecast['type'] = 'forecast'
+        out_forecast = forecast_full[
+            ["ds", "yhat", "yhat_lower", "yhat_upper", "sku", "run_id"]
+        ].copy()
+        out_forecast["type"] = "forecast"
 
         # Add actuals overlay
-        actuals = sub[['ds', 'y']].copy()
-        actuals['yhat'] = actuals['y']
-        actuals['yhat_lower'] = actuals['y']
-        actuals['yhat_upper'] = actuals['y']
-        actuals['sku'] = sku_id
-        actuals['run_id'] = RUN_ID
-        actuals['type'] = 'actual'
-        actuals = actuals[['ds', 'yhat', 'yhat_lower', 'yhat_upper', 'sku', 'run_id', 'type']]
+        actuals = sub[["ds", "y"]].copy()
+        actuals["yhat"] = actuals["y"]
+        actuals["yhat_lower"] = actuals["y"]
+        actuals["yhat_upper"] = actuals["y"]
+        actuals["sku"] = sku_id
+        actuals["run_id"] = RUN_ID
+        actuals["type"] = "actual"
+        actuals = actuals[["ds", "yhat", "yhat_lower", "yhat_upper", "sku", "run_id", "type"]]
 
         combined = pd.concat([actuals, out_forecast], ignore_index=True)
 
@@ -260,7 +263,7 @@ def forecast_sku(sku_id):
 # ------------------- 6. RUN IN PARALLEL -------------------
 log.info(f"[5/7] Forecasting {len(eligible_skus)} SKUs in parallel...")
 
-results = Parallel(n_jobs=-1, backend='loky', verbose=10)(
+results = Parallel(n_jobs=-1, backend="loky", verbose=10)(
     delayed(forecast_sku)(sku) for sku in eligible_skus
 )
 
@@ -309,7 +312,9 @@ if forecast_dfs:
         log.info(f"   -> Wrote {metrics_count:,} rows to {table_metrics}")
 
     # Create/update stable views pointing to latest run
-    log.info(f"   -> Creating stable views ({STABLE_VIEW_FORECASTS}, {STABLE_VIEW_METRICS}) and compatibility views...")
+    log.info(
+        f"   -> Creating stable views ({STABLE_VIEW_FORECASTS}, {STABLE_VIEW_METRICS}) and compatibility views..."
+    )
     with engine.begin() as conn:
         # Drop compatibility views first to allow column shape changes safely
         conn.execute(text("DROP VIEW IF EXISTS public.simple_prophet_forecast"))
@@ -318,7 +323,9 @@ if forecast_dfs:
         conn.execute(text(f"DROP VIEW IF EXISTS public.{STABLE_VIEW_METRICS}"))
 
         # View 1: Latest forecast data (stable contract)
-        conn.execute(text(f"""
+        conn.execute(
+            text(
+                f"""
             CREATE OR REPLACE VIEW public.{STABLE_VIEW_FORECASTS} AS
             SELECT
                 CAST(ds AS date) AS forecast_date,
@@ -330,10 +337,14 @@ if forecast_dfs:
                 run_id AS forecast_run_id
             FROM public.{table_forecasts}
             ORDER BY sku, ds
-        """))
+        """
+            )
+        )
 
         # View 2: Latest metrics (stable contract)
-        conn.execute(text(f"""
+        conn.execute(
+            text(
+                f"""
             CREATE OR REPLACE VIEW public.{STABLE_VIEW_METRICS} AS
             SELECT
                 sku,
@@ -347,10 +358,14 @@ if forecast_dfs:
                 run_id AS forecast_run_id
             FROM public.{table_metrics}
             ORDER BY test_mape_pct ASC
-        """))
+        """
+            )
+        )
 
         # Compatibility view: legacy Power BI queries still hit simple_prophet_forecast
-        conn.execute(text("""
+        conn.execute(
+            text(
+                """
             CREATE OR REPLACE VIEW public.simple_prophet_forecast AS
             SELECT
                 forecast_date AS ds,
@@ -361,10 +376,14 @@ if forecast_dfs:
                 data_type,
                 forecast_run_id
             FROM public.v_forecast_daily_latest
-        """))
+        """
+            )
+        )
 
         # Compatibility view: legacy metrics table name
-        conn.execute(text("""
+        conn.execute(
+            text(
+                """
             CREATE OR REPLACE VIEW public.forecast_error_metrics AS
             SELECT
                 sku,
@@ -377,16 +396,18 @@ if forecast_dfs:
                 test_days AS n_test,
                 forecast_run_id AS run_id
             FROM public.v_forecast_sku_metrics_latest
-        """))
+        """
+            )
+        )
 
     log.info("   -> Stable and compatibility views updated successfully")
 
     # ------------------- FINAL SUMMARY -------------------
-    log.info("\n" + "="*70)
+    log.info("\n" + "=" * 70)
     log.info("FORECASTING COMPLETE — RUN SUMMARY")
-    log.info("="*70)
+    log.info("=" * 70)
 
-    median_mape = metrics_df['test_mape_pct'].median()
+    median_mape = metrics_df["test_mape_pct"].median()
     log.info(f"Successful SKUs: {len(metrics_df)} / {len(eligible_skus)}")
     log.info(f"Median MAPE: {median_mape:.1f}%")
     log.info(f"Median MAE: {metrics_df['test_mae'].median():.1f}")
@@ -404,9 +425,9 @@ if forecast_dfs:
     log.info("Next: Refresh Power BI -> Check 'Forecast vs Actuals' dashboard")
 
     # Print Power BI connection contract
-    log.info("\n" + "="*70)
+    log.info("\n" + "=" * 70)
     log.info("POWER BI CONNECTION CONTRACT")
-    log.info("="*70)
+    log.info("=" * 70)
     log.info("Power BI should query these compatibility views (auto-update every run):")
     log.info("")
     log.info("  1) Forecast Data: public.simple_prophet_forecast")
@@ -422,7 +443,7 @@ if forecast_dfs:
     log.info("  SELECT MAX(mean_absolute_pct_error) FROM public.v_forecast_sku_metrics_latest;")
     log.info("")
     log.info("DO NOT query versioned tables directly (prophet_forecasts_YYYYMMDD_HHMM).")
-    log.info("="*70)
+    log.info("=" * 70)
 else:
     log.error("No forecasts generated. Check logs above.")
-    log.info("="*70)
+    log.info("=" * 70)
